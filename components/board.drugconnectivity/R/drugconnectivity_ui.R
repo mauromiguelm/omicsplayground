@@ -49,7 +49,7 @@ DrugConnectivityUI <- function(id) {
                             flex=c(1.2,0.04,1),
                             plotWidget(ns("dsea_enplots")),
                             shiny::br(),
-                            plotWidget(ns("dsea_moaplot"))
+                            drugconnectivity_plot_dsea_moa_ui(ns("dsea_moaplot"))
                         ),
                         shiny::br(),  ## vertical space
                         tableWidget(ns("dsea_table"))        

@@ -3,7 +3,7 @@
 ## Copyright (c) 2018-2022 BigOmics Analytics Sagl. All rights reserved.
 ##
 
-DrugConnectivityBoard <- function(id, inputData)
+DrugConnectivityBoard <- function(id, pgx)
 {
   moduleServer(id, function(input, output, session)
   {
@@ -27,7 +27,7 @@ DrugConnectivityBoard <- function(id, inputData)
     )
 
     shiny::observe({
-        ngs <- inputData()
+        ngs <- pgx
         shiny::req(ngs)
         ct <- names(ngs$drugs)
         shiny::updateSelectInput(session, "dsea_method", choices=ct)
@@ -46,7 +46,7 @@ DrugConnectivityBoard <- function(id, inputData)
     })
 
     shiny::observe({
-        ngs <- inputData()
+        ngs <- pgx
         shiny::req(ngs)
         ct <- colnames(ngs$model.parameters$contr.matrix)
         shiny::updateSelectInput(session, "dsea_contrast", choices=sort(ct) )
@@ -58,7 +58,7 @@ DrugConnectivityBoard <- function(id, inputData)
 
     getActiveDSEA <- shiny::reactive({
         
-        ngs <- inputData()
+        ngs <- pgx
         alertDataLoaded(session,ngs)
         shiny::req(ngs)        
         shiny::req(input$dsea_contrast, input$dsea_method)
@@ -184,7 +184,7 @@ DrugConnectivityBoard <- function(id, inputData)
     
     dsea_enplots.RENDER <- shiny::reactive({
 
-        ngs <- inputData()
+        ngs <- pgx
         if(is.null(ngs$drugs)) return(NULL)        
         shiny::validate(shiny::need("drugs" %in% names(ngs), "no 'drugs' in object."))        
         shiny::req(input$dsea_contrast, input$dsea_method)
@@ -259,7 +259,7 @@ DrugConnectivityBoard <- function(id, inputData)
     ##dsea_moaplot.RENDER <- shiny::reactive({
     dsea_moaplot.RENDER <- shiny::reactive({    
 
-        ngs <- inputData()
+        ngs <- pgx
         shiny::req(ngs)
         
         if(is.null(ngs$drugs)) return(NULL)
@@ -282,7 +282,7 @@ DrugConnectivityBoard <- function(id, inputData)
     ##dsea_moaplot.RENDER2 <- shiny::reactive({
     dsea_moaplot.RENDER2 <- shiny::reactive({    
 
-        ngs <- inputData()
+        ngs <- pgx
         shiny::req(ngs, input$dsea_contrast, input$dsea_method)
         
         if(is.null(ngs$drugs)) return(NULL)
@@ -301,7 +301,7 @@ DrugConnectivityBoard <- function(id, inputData)
     })    
         
     dsea_table.RENDER <- shiny::reactive({
-        ngs <- inputData()
+        ngs <- pgx
         shiny::req(ngs)
         if(is.null(ngs$drugs)) return(NULL)
         
@@ -393,7 +393,7 @@ DrugConnectivityBoard <- function(id, inputData)
     dsea_actmap.RENDER <- shiny::reactive({
 
 
-        ngs <- inputData()
+        ngs <- pgx
         shiny::req(ngs, input$dsea_contrast, input$dsea_method)
 
         shiny::validate(shiny::need("drugs" %in% names(ngs), "no 'drugs' in object."))    
@@ -406,26 +406,7 @@ DrugConnectivityBoard <- function(id, inputData)
 
         dseaPlotActmap(ngs, dmethod, contr, nterms=50, nfc=20)
 
-    })    
-
-    dsea_actmap.RENDER2 <- shiny::reactive({
-
-
-        ngs <- inputData()
-        shiny::req(ngs, input$dsea_contrast, input$dsea_method)
-
-        shiny::validate(shiny::need("drugs" %in% names(ngs), "no 'drugs' in object."))    
-        if(is.null(ngs$drugs)) return(NULL)
-        
-        dmethod="activity/L1000";contr=1
-        dmethod <- input$dsea_method        
-        contr = input$dsea_contrast
-        if(is.null(contr)) return(NULL)
-
-        dseaPlotActmap(ngs, dmethod, contr, nterms=50, nfc=100)
-        
-    })    
-
+    })
         
     ##--------- DSEA enplot plotting module
     dsea_enplots.opts = shiny::tagList()
@@ -451,7 +432,7 @@ DrugConnectivityBoard <- function(id, inputData)
     )
     shiny::callModule(
         plotModule,
-        id = "dsea_moaplot",
+        id = "dsea_moaplot_alt",
         func = dsea_moaplot.RENDER,
         func2 = dsea_moaplot.RENDER2, 
         ## csvFunc = getMOA,
@@ -472,7 +453,7 @@ DrugConnectivityBoard <- function(id, inputData)
         plotModule,
         id = "dsea_actmap",
         func = dsea_actmap.RENDER,
-        func2 = dsea_actmap.RENDER2, 
+        func2 = dsea_actmap.RENDER, 
         title = "Activation matrix", label="d",
         info.text = "The <strong>Activation Matrix</strong> visualizes the activation of drug activation enrichment across the conditions. The size of the circles correspond to their relative activation, and are colored according to their upregulation (red) or downregulation (blue) in the contrast profile.",
         options = dsea_actmap.opts,
@@ -507,7 +488,7 @@ DrugConnectivityBoard <- function(id, inputData)
     
     cmap_enplot.RENDER <- shiny::reactive({
         
-        pgx <- inputData()
+        pgx <- pgx
                 
         ## get selected drug (from table)
         dsea <- getActiveDSEA()
@@ -703,7 +684,7 @@ DrugConnectivityBoard <- function(id, inputData)
 
         dbg("[dsea_cmap.RENDER] reacted!")
         
-        pgx <- inputData()
+        pgx <- pgx
         shiny::req(pgx)
         db="L1000/gene";contr="treatment:Gefitinib_vs_CT"
 
@@ -790,7 +771,7 @@ DrugConnectivityBoard <- function(id, inputData)
     ##---------------------------------------------------------------------
     
     cmap_table.RENDER <- shiny::reactive({
-        pgx <- inputData()
+        pgx <- pgx
         shiny::req(pgx)
         if(is.null(pgx$drugs)) return(NULL)
         
@@ -832,4 +813,17 @@ DrugConnectivityBoard <- function(id, inputData)
     )
 
   })
+
+
+    ##================================================================================
+    ##=========================== MODULES ============================================
+    ##================================================================================
+
+    WATERMARK = FALSE
+
+  drugconnectivity_plot_dsea_moa_server(
+      "dsea_moaplot",
+      pgx,
+      watermark = WATERMARK
+    )
 }

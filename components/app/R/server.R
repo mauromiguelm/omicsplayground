@@ -194,10 +194,11 @@ app_server <- function(input, output, session) {
         })
         
         shiny::withProgress(message="initializing modules ...", value=0, {
-
+   
             DataViewBoard("view", pgx=PGX)            
             ClusteringBoard("clust", pgx=PGX)
             WordCloudBoard("word", pgx=PGX)
+            DrugConnectivityBoard("drug", pgx = PGX)
             shiny::incProgress(0.2)
 
             ## *** DEVNOTE *** board below still need refactoring
@@ -209,7 +210,6 @@ app_server <- function(input, output, session) {
             FunctionalBoard("func", inputData = inputData,
                             selected_gsetmethods = env$enrich$selected_gsetmethods)
             shiny::incProgress(0.4)
-            DrugConnectivityBoard("drug", inputData = inputData)
             IntersectionBoard("isect", inputData = inputData,
                               selected_gxmethods = env$expr$selected_gxmethods,
                               selected_gsetmethods = env$enrich$selected_gsetmethods)
