@@ -171,7 +171,10 @@ DrugConnectivityBoard <- function(id, pgx)
     })
 
     getMOA <- shiny::reactive({
-        moatype <- input$dsea_moatype
+        
+        # TODO fix input$dsea_moatype
+        #moatype <- input$dsea_moatype
+        moatype <- 'target gene'
         res <- NULL
         if(moatype=='target gene') res <- getMOA.target()
         if(moatype=='drug class')  res <- getMOA.class()
@@ -811,19 +814,17 @@ DrugConnectivityBoard <- function(id, pgx)
         title = "CONNECTIVITY TABLE",
         height = c(380,740)
     )
-
-  })
-
-
     ##================================================================================
     ##=========================== MODULES ============================================
     ##================================================================================
 
     WATERMARK = FALSE
 
-  drugconnectivity_plot_dsea_moa_server(
-      "dsea_moaplot",
-      pgx,
-      watermark = WATERMARK
+    drugconnectivity_plot_dsea_moa_server(
+        "dsea_moaplot",
+        pgx,
+        getMOA,
+        watermark = WATERMARK
     )
+  })
 }

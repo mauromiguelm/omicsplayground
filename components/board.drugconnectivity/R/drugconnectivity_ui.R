@@ -19,6 +19,8 @@ DrugConnectivityInputs <- function(id) {
 }
 
 DrugConnectivityUI <- function(id) {
+
+    imgH <- c(330,600)
     ns <- shiny::NS(id)  ## namespace
     shiny::fillCol(
         flex = c(1),
@@ -49,7 +51,7 @@ DrugConnectivityUI <- function(id) {
                             flex=c(1.2,0.04,1),
                             plotWidget(ns("dsea_enplots")),
                             shiny::br(),
-                            drugconnectivity_plot_dsea_moa_ui(ns("dsea_moaplot"))
+                            drugconnectivity_plot_dsea_moa_ui(ns("dsea_moaplot"),height=imgH)
                         ),
                         shiny::br(),  ## vertical space
                         tableWidget(ns("dsea_table"))        
