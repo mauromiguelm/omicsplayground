@@ -171,7 +171,6 @@ DrugConnectivityBoard <- function(id, pgx)
     })
 
     getMOA <- shiny::reactive({
-        
         # TODO fix input$dsea_moatype
         #moatype <- input$dsea_moatype
         moatype <- 'target gene'
