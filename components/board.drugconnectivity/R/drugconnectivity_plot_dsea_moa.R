@@ -31,15 +31,12 @@ drugconnectivity_plot_dsea_moa_server <- function(id,
     moduleServer( id, function(input, output, session) {
 
         getMOA <- shiny::reactive({
-            # TODO fix input$dsea_moatype
             moatype <- input$dsea_moatype
             res <- NULL
             if(moatype=='target gene') res <- getMOA.target()
             if(moatype=='drug class')  res <- getMOA.class()
             res
         })
-
-
 
         plot_data <- shiny::reactive({
 
@@ -64,7 +61,6 @@ drugconnectivity_plot_dsea_moa_server <- function(id,
             return(moa.top)
         })
 
-
         plot.RENDER <- function() {
 
             pd  <- plot_data()
@@ -74,7 +70,6 @@ drugconnectivity_plot_dsea_moa_server <- function(id,
             barplot(pd, horiz=FALSE, las=3,
                 ylab="enrichment  (NES)",
                 cex.names=0.96 )
-
         }
 
         modal_plot.RENDER <- function() {

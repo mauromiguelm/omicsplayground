@@ -60,8 +60,7 @@ DrugConnectivityBoard <- function(id, pgx)
       
         ngs <- pgx
         alertDataLoaded(session,ngs)
-        shiny::req(ngs)        
-        shiny::req(input$dsea_contrast, input$dsea_method)
+        shiny::req(ngs)
         
         dbg("[getActiveDSEA] reacted")
         
@@ -290,7 +289,7 @@ DrugConnectivityBoard <- function(id, pgx)
                 ylab="enrichment  (NES)",
                 cex.names=1 )
         
-    })    
+    })
         
     dsea_table.RENDER <- shiny::reactive({
         ngs <- pgx
@@ -797,6 +796,7 @@ DrugConnectivityBoard <- function(id, pgx)
       "dsea_enplots",
       pgx,
       getActiveDSEA,
+      dmethod = reactive(input$dsea_method),
       dsea_table,
       watermark = WATERMARK      
     )    

@@ -24,6 +24,7 @@ drugconnectivity_plot_dsea_en_ui <- function(id, label='', height=c(600,800)) {
 drugconnectivity_plot_dsea_en_server <- function(id,
                                                 pgx,
                                                 getActiveDSEA,
+                                                dmethod,
                                                 dsea_table,
                                                 watermark=FALSE)
 {
@@ -36,10 +37,10 @@ drugconnectivity_plot_dsea_en_server <- function(id,
             ngs <- pgx
             if(is.null(ngs$drugs)) return(NULL)
             shiny::validate(shiny::need("drugs" %in% names(ngs), "no 'drugs' in object."))
-            shiny::req(input$dsea_contrast, input$dsea_method)
 
             dbg("[dsea_enplots.RENDER] called!")
 
+      
             dsea <- getActiveDSEA()
             dt <- dsea$table
 
@@ -63,52 +64,55 @@ drugconnectivity_plot_dsea_en_server <- function(id,
         plot.RENDER <- function() {
 
             pd  <- plot_data()
+           
             shiny::req(pd)
             ## rank vector for enrichment plots
-        dmethod <- input$dsea_method
-        rnk <- dsea$stats
-        if(length(rnk)==0) return(NULL)
+            
+            dmethod <- dmethod()
+            dsea <- getActiveDSEA()
+            rnk <- dsea$stats
+            if(length(rnk)==0) return(NULL)
 
-        ## ENPLOT TYPE
-        if(nrow(dt)==1) {
-            par(oma=c(1,1,1,1))
-            par(mfrow=c(1,1), mar=c(4,4,1.1,2), mgp=c(2.3,0.9,0))
-            lab.cex = 1
-            xlab="Rank in ordered dataset"
-            ylab="Rank metric"
-            nc=1
-        } else {
-            dt <- head(dt, 16)
-            lab.cex = 0.75
-            xlab=''
-            ylab=""
-            nc = ceiling(sqrt(nrow(dt)))
-            par(oma=c(0,1.6,0,0))
-            par(mfrow=c(nc,nc), mar=c(0.3,1.0,1.3,0), mgp=c(1.9,0.6,0))
-        }
-
-        i=1
-        for(i in 1:nrow(dt)) {
-            dx <- rownames(dt)[i]
-            dx
-            gmtdx <- grep(dx,names(rnk),fixed=TRUE,value=TRUE)  ## L1000 naming
-            length(gmtdx)
-            ##if(length(gmtdx) < 3) { frame(); next }
-            dx1 <- substring(dx,1,26)
-            par(cex.axis=0.001)
-            if(i%%nc==1) par(cex.axis=0.98)
-            suppressWarnings(
-                gsea.enplot( rnk, gmtdx, main=dx1, cex.main=1.2,
-                            xlab=xlab, ylab=ylab)
-            )
-            nes <- round(dt$NES[i],2)
-            qv  <- round(dt$padj[i],3)
-            tt <- c( paste("NES=",nes), paste("q=",qv) )
-            legend("topright", legend=tt, cex=0.8, y.intersp=0.85, bty='n')
-            if(i%%nc==1 && nrow(dt)>1) {
-                mtext('rank metric', side=2, line=1.8, cex=lab.cex)
+            ## ENPLOT TYPE
+            if(nrow(pd)==1) {
+                par(oma=c(1,1,1,1))
+                par(mfrow=c(1,1), mar=c(4,4,1.1,2), mgp=c(2.3,0.9,0))
+                lab.cex = 1
+                xlab="Rank in ordered dataset"
+                ylab="Rank metric"
+                nc=1
+            } else {
+                pd <- head(pd, 16)
+                lab.cex = 0.75
+                xlab=''
+                ylab=""
+                nc = ceiling(sqrt(nrow(pd)))
+                par(oma=c(0,1.6,0,0))
+                par(mfrow=c(nc,nc), mar=c(0.3,1.0,1.3,0), mgp=c(1.9,0.6,0))
             }
-        }
+
+            i=1
+            for(i in 1:nrow(pd)) {
+                dx <- rownames(pd)[i]
+                dx
+                gmtdx <- grep(dx,names(rnk),fixed=TRUE,value=TRUE)  ## L1000 naming
+                length(gmtdx)
+                ##if(length(gmtdx) < 3) { frame(); next }
+                dx1 <- substring(dx,1,26)
+                par(cex.axis=0.001)
+                if(i%%nc==1) par(cex.axis=0.98)
+                suppressWarnings(
+                    gsea.enplot( rnk, gmtdx, main=dx1, cex.main=1.2,
+                                xlab=xlab, ylab=ylab)
+                )
+                nes <- round(pd$NES[i],2)
+                qv  <- round(pd$padj[i],3)
+                tt <- c( paste("NES=",nes), paste("q=",qv) )
+                legend("topright", legend=tt, cex=0.8, y.intersp=0.85, bty='n')
+                if(i%%nc==1 && nrow(pd)>1) {
+                    mtext('rank metric', side=2, line=1.8, cex=lab.cex)
+                }
+            }
 
 
 
