@@ -1,18 +1,18 @@
 drugconnectivity_plot_dsea_en_ui <- function(id, label='', height=c(600,800)) {
 
     ns <- shiny::NS(id)
-    info.text = "<strong>Drug connectivity</strong> correlates your signature with known
+    info_text = "<strong>Drug connectivity</strong> correlates your signature with known
      drug profiles from the L1000 database, and shows similar and opposite profiles by
       running the GSEA algorithm on the drug profile correlation space."
-    
-    dsea_enplots.opts = shiny::tagList()
-    
+
+    opts = shiny::tagList()
+
     PlotModuleUI(
-        ns("test"),
+        ns("pltmod"),
         title = "Drug connectivity",
         label = "a",
         outputFunc = plotOutput,
-        outputFunc2 = plotOutput,        
+        outputFunc2 = plotOutput,
         info.text = info_text,
         options = opts,
         download.fmt=c("png","pdf","csv"),
@@ -23,176 +23,101 @@ drugconnectivity_plot_dsea_en_ui <- function(id, label='', height=c(600,800)) {
 
 drugconnectivity_plot_dsea_en_server <- function(id,
                                                 pgx,
+                                                getActiveDSEA,
+                                                dsea_table,
                                                 watermark=FALSE)
 {
     moduleServer( id, function(input, output, session) {
 
         dbg("[dataview_expressionplot_server] created!")
-        
+
         plot_data <- shiny::reactive({
 
-            shiny::req(pgx$X)
-            shiny::req(r.gene(), r.data_type())
-            
-            ## dereference reactives
-            gene <- r.gene()
-            samples <- r.samples()
-            data_type <- r.data_type()                      
-            groupby <- r.data_groupby()
+            ngs <- pgx
+            if(is.null(ngs$drugs)) return(NULL)
+            shiny::validate(shiny::need("drugs" %in% names(ngs), "no 'drugs' in object."))
+            shiny::req(input$dsea_contrast, input$dsea_method)
 
-            if(samples[1]=="") samples <- colnames(pgx$X)
-            if(gene=="") genes <- rownames(pgx$X)[1]            
-            
-            grpvar=1
-            grp <- rep(NA,length(samples))
-            if(groupby != "<ungrouped>") {
-                grp  = factor(as.character(pgx$Y[samples,groupby]))
-            }
+            dbg("[dsea_enplots.RENDER] called!")
 
-            pp <- rownames(pgx$genes)[match(gene, pgx$genes$gene_name)]            
-            gx = NULL
-            ylab = NULL
-            if(data_type=="counts") {
-                gx = pgx$counts[pp,samples]
-                ylab="expression (counts)"
-            } else if(data_type=="CPM") {
-                gx = 2**pgx$X[pp,samples]
-                ylab="expression (CPM)"
-            } else if(data_type=="logCPM") {
-                gx = pgx$X[pp,samples]
-                ylab="expression (log2CPM)"
+            dsea <- getActiveDSEA()
+            dt <- dsea$table
+
+            ## filter with table selection/search
+            ii  <- dsea_table$rows_selected()
+            jj  <- dsea_table$rows_all()
+            shiny::req(jj)  ## must have non-empty table
+
+            if(length(ii)>0) {
+                dt <- dt[ii,,drop=FALSE]
             }
-            
-            pd <- list(
-                df = data.frame(
-                    x = gx,
-                    samples = samples,
-                    group = grp
-                ),
-                geneplot_type = input$geneplot_type,
-                groupby = groupby,
-                ylab = ylab,
-                gene = gene
-            )
-            return(pd)
+            if(length(ii)==0 && length(jj)>0) {
+                dt <- dt[jj,,drop=FALSE]
+            }
+            if(nrow(dt)==0) return(NULL)
+
+            return(dt)
         })
 
 
         plot.RENDER <- function() {
-            
+
             pd  <- plot_data()
             shiny::req(pd)
+            ## rank vector for enrichment plots
+        dmethod <- input$dsea_method
+        rnk <- dsea$stats
+        if(length(rnk)==0) return(NULL)
 
-            df <- pd[['df']]
-            
-            par(mar=c(7,3.5,2,1), mgp=c(2.1,0.8,0))
-            
-            BLUE = rgb(0.2,0.5,0.8,0.8)
-            bee.cex = ifelse(length(df$x)>500,0.1,0.2)
-            bee.cex = c(0.3,0.1,0.05)[cut(length(df$x),c(0,100,500,99999))]
-            
-            if(pd$groupby != "<ungrouped>") {
-                nnchar = nchar(paste(unique(df$group),collapse=''))
-                srt = ifelse(nnchar < 20, 0, 35)
-                ngrp <- length(unique(df$group))
-                cx1 = ifelse( ngrp < 10, 1, 0.8)
-                cx1 = ifelse( ngrp > 20, 0.6, cx1)
-                if(pd$geneplot_type == 'bar') {
-                    gx.b3plot(
-                        df$x,
-                        df$group,
-                        las=3,
-                        main=pd$gene,
-                        ylab=pd$ylab,
-                        cex.main=1,
-                        col.main="#7f7f7f",
-                        bar=TRUE,
-                        border=NA,
-                        ## bee = ifelse(length(df$x) < 500,TRUE,FALSE),
-                        bee.cex = bee.cex,
-                        ## sig.stars=TRUE,
-                        ## max.stars=5,
-                        xlab="",
-                        names.cex=cx1,
-                        srt=srt,
-                        col = rgb(0.4,0.6,0.85,0.85)
-                    )
-                } else if(pd$geneplot_type == 'violin') {
-                    pgx.violinPlot(
-                        df$x,
-                        df$group,
-                        main = pd$gene,
-                        cex.main=1,
-                        xlab = '',
-                        ylab = ylab,
-                        ##vcol = rgb(0.2,0.5,0.8,0.8),
-                        vcol = rgb(0.4,0.6,0.85,0.85),
-                        srt = srt
-                    )
-                    
-                } else {
-                    boxplot(
-                        df$x ~ df$group,
-                        main = pd$gene,
-                        cex.main = 1.0,
-                        ylab = pd$ylab,
-                        xlab = '',
-                        xaxt = 'n',
-                        col = rgb(0.4,0.6,0.85,0.85)
-                    )
-                    yy <- sort(unique(df$group))
-                    text(x = 1:length(yy),
-                         y = par("usr")[3] - 0.03*diff(range(df$x)),
-                         labels = yy,
-                         xpd = NA,
-                         srt = srt,
-                         adj = ifelse(srt==0, 0.5, 0.965),
-                         cex = cx1)
-                }
-            }  else {
+        ## ENPLOT TYPE
+        if(nrow(dt)==1) {
+            par(oma=c(1,1,1,1))
+            par(mfrow=c(1,1), mar=c(4,4,1.1,2), mgp=c(2.3,0.9,0))
+            lab.cex = 1
+            xlab="Rank in ordered dataset"
+            ylab="Rank metric"
+            nc=1
+        } else {
+            dt <- head(dt, 16)
+            lab.cex = 0.75
+            xlab=''
+            ylab=""
+            nc = ceiling(sqrt(nrow(dt)))
+            par(oma=c(0,1.6,0,0))
+            par(mfrow=c(nc,nc), mar=c(0.3,1.0,1.3,0), mgp=c(1.9,0.6,0))
+        }
 
-                ## plot as bars
-                barplot(
-                    df$x,
-                    col = BLUE,
-                    las = 3,
-                    cex.names = 0.8,
-                    ylab = pd$ylab,
-                    xlab = "",
-                    main = pd$gene,
-                    cex.main = 1,
-                    col.main = "#7f7f7f",
-                    border = NA,
-                    names.arg = rep(NA,length(df$x))
-                )
-
-                ## add labels if needed
-                nx <-  length(df$x)
-                if(nx < 100) {
-                    cx1 = ifelse(nx > 20, 0.8, 0.9)
-                    cx1 = ifelse(nx > 40, 0.6, cx1)
-                    cx1 = ifelse(nx < 10, 1, cx1)
-                    text(
-                        x = (1:nx-0.5)*1.2,
-                        y = -0.04*max(df$x),
-                        labels = names(df$x),
-                        las = 3,
-                        cex = cx1,
-                        pos = 2,
-                        adj = 0,
-                        offset = 0,
-                        srt = 45,
-                        xpd = TRUE
-                    )
-                }
+        i=1
+        for(i in 1:nrow(dt)) {
+            dx <- rownames(dt)[i]
+            dx
+            gmtdx <- grep(dx,names(rnk),fixed=TRUE,value=TRUE)  ## L1000 naming
+            length(gmtdx)
+            ##if(length(gmtdx) < 3) { frame(); next }
+            dx1 <- substring(dx,1,26)
+            par(cex.axis=0.001)
+            if(i%%nc==1) par(cex.axis=0.98)
+            suppressWarnings(
+                gsea.enplot( rnk, gmtdx, main=dx1, cex.main=1.2,
+                            xlab=xlab, ylab=ylab)
+            )
+            nes <- round(dt$NES[i],2)
+            qv  <- round(dt$padj[i],3)
+            tt <- c( paste("NES=",nes), paste("q=",qv) )
+            legend("topright", legend=tt, cex=0.8, y.intersp=0.85, bty='n')
+            if(i%%nc==1 && nrow(dt)>1) {
+                mtext('rank metric', side=2, line=1.8, cex=lab.cex)
             }
+        }
+
+
 
         }
-        
+
         modal_plot.RENDER <- function() {
             plot.RENDER()
         }
-        
+
         PlotModuleServer(
             "pltmod",
             plotlib = "base",
@@ -201,9 +126,9 @@ drugconnectivity_plot_dsea_en_server <- function(id,
             func2 = modal_plot.RENDER,
             csvFunc = plot_data,   ##  *** downloadable data as CSV
             renderFunc = shiny::renderPlot,
-            renderFunc2 = shiny::renderPlot,        
+            renderFunc2 = shiny::renderPlot,
             ##renderFunc = shiny::renderCachedPlot,
-            ##renderFunc2 = shiny::renderCachedPlot,        
+            ##renderFunc2 = shiny::renderCachedPlot,
             res = c(90,170)*1,                ## resolution of plots
             pdf.width = 6, pdf.height = 6,
             add.watermark = watermark

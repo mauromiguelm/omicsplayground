@@ -57,7 +57,7 @@ DrugConnectivityBoard <- function(id, pgx)
     ##================================================================================
 
     getActiveDSEA <- shiny::reactive({
-        
+      
         ngs <- pgx
         alertDataLoaded(session,ngs)
         shiny::req(ngs)        
@@ -168,16 +168,6 @@ DrugConnectivityBoard <- function(id, pgx)
         )
         moa.class <- moa.class[order(-abs(moa.class$NES)),]        
         return(moa.class)
-    })
-
-    getMOA <- shiny::reactive({
-        # TODO fix input$dsea_moatype
-        #moatype <- input$dsea_moatype
-        moatype <- 'target gene'
-        res <- NULL
-        if(moatype=='target gene') res <- getMOA.target()
-        if(moatype=='drug class')  res <- getMOA.class()
-        res
     })
     
     ##================================================================================
@@ -427,25 +417,8 @@ DrugConnectivityBoard <- function(id, pgx)
         add.watermark = WATERMARK        
     )
     
-    ##---------- DSEA Activation map plotting module
-    dsea_moaplot.opts = shiny::tagList(
-        withTooltip( shiny::radioButtons(ns('dsea_moatype'),'Plot type:',c("drug class","target gene"),inline=TRUE),
-               "Select plot type of MOA analysis: by class description or by target gene.")
-    )
-    shiny::callModule(
-        plotModule,
-        id = "dsea_moaplot_alt",
-        func = dsea_moaplot.RENDER,
-        func2 = dsea_moaplot.RENDER2, 
-        ## csvFunc = getMOA,
-        title = "Mechanism of action", label="c",
-        info.text = "This plot visualizes the <strong>mechanism of action</strong> (MOA) across the enriched drug profiles. On the vertical axis, the GSEA normalized enrichment score of the MOA class or gene target is plotted. You can switch to visualize between MOA class or target gene.",
-        options = dsea_moaplot.opts,
-        pdf.width=6, pdf.height=6,
-        height = c(0.54*rowH,700), width=c('auto',1400),
-        res=c(70,110),
-        add.watermark = WATERMARK
-    )
+    
+    
 
     ##-------- Activation map plotting module
     dsea_actmap.opts = shiny::tagList(
@@ -819,10 +792,20 @@ DrugConnectivityBoard <- function(id, pgx)
 
     WATERMARK = FALSE
 
+    ## first tab ---------------------------------------
+    drugconnectivity_plot_dsea_en_server(
+      "dsea_enplots",
+      pgx,
+      getActiveDSEA,
+      dsea_table,
+      watermark = WATERMARK      
+    )    
+
     drugconnectivity_plot_dsea_moa_server(
         "dsea_moaplot",
         pgx,
-        getMOA,
+        getMOA.target,
+        getMOA.class,
         watermark = WATERMARK
     )
   })

@@ -49,7 +49,7 @@ DrugConnectivityUI <- function(id) {
                         height = 660,
                         shiny::fillRow(
                             flex=c(1.2,0.04,1),
-                            plotWidget(ns("dsea_enplots")),
+                            drugconnectivity_plot_dsea_en_ui(ns("dsea_enplots")),
                             shiny::br(),
                             drugconnectivity_plot_dsea_moa_ui(ns("dsea_moaplot"),height=imgH)
                         ),

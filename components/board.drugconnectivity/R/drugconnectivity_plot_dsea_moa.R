@@ -4,6 +4,11 @@ drugconnectivity_plot_dsea_moa_ui <- function(id, label='', height=c(600,800)) {
     info_text = "<strong>Drug connectivity</strong> correlates your signature with known drug profiles from the L1000 database, and shows similar and opposite profiles by running the GSEA algorithm on the drug profile correlation space."
 
     opts = shiny::tagList()
+    ##---------- DSEA Activation map plotting module
+    opts = shiny::tagList(
+        withTooltip( shiny::radioButtons(ns('dsea_moatype'),'Plot type:',c("drug class","target gene"),inline=TRUE),
+               "Select plot type of MOA analysis: by class description or by target gene.")
+    )
 
     PlotModuleUI(
         ns("pltmod"),
@@ -19,10 +24,20 @@ drugconnectivity_plot_dsea_moa_ui <- function(id, label='', height=c(600,800)) {
 
 drugconnectivity_plot_dsea_moa_server <- function(id,
                                                   pgx,
-                                                  getMOA,
+                                                  getMOA.target,
+                                                  getMOA.class,
                                                   watermark=FALSE)
 {
     moduleServer( id, function(input, output, session) {
+
+        getMOA <- shiny::reactive({
+            # TODO fix input$dsea_moatype
+            moatype <- input$dsea_moatype
+            res <- NULL
+            if(moatype=='target gene') res <- getMOA.target()
+            if(moatype=='drug class')  res <- getMOA.class()
+            res
+        })
 
 
 
