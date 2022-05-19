@@ -30,8 +30,7 @@ UploadBoardUI <- function(id) {
       pages = list(
         "Upload data"    = UploadModuleUI(ns("upload")),
         ## "Normalize" = shiny::uiOutput(ns("normalize_UI")),
-        ## "BatchCorrect" = shiny::uiOutput(ns("batchcorrect_UI")),
-        ## "Check"     = CheckDataUI(ns("chkdata")),
+        "BatchCorrect" = BatchCorrectUI(ns("batchcorrect")),        
         "Create comparisons" =  MakeContrastUI(ns("makecontrast")),
         "Compute!"   = ComputePgxUI(ns("compute"))
       ),

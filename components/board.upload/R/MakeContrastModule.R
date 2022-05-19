@@ -18,7 +18,7 @@ MakeContrastUI <- function(id) {
   ns <- shiny::NS(id)
   ##uiOutput(ns("UI"))
 
-  help_text = "Create a comparison by dragging conditions into the MAIN or CONTROL boxes on the right. Then, to add to the table, press 'add comparison'."        
+  help_text = "Create a comparison by dragging conditions into the boxes on the right. Then, press '+add comparison'."        
 
   shiny::fillCol(
     height = 750,
@@ -549,7 +549,7 @@ MakeContrastServerRT <- function(id, phenoRT, contrRT, countsRT, height=720)
         
         if( status.ok!="OK" || !has.contrasts) {
           frame()
-          status.ds <- "(Optional) You can optionally upload a 'contrasts.csv' file specifying your contrasts. Or you can create your contrasts in the next step."
+          status.ds <- "(Optional) You can optionally upload a 'contrasts.csv' file specifying your contrasts. Or you can create your contrasts here."
           ##status.ds <- check["contrasts.csv","description"]
           msg <- paste(toupper(status.ok),"\n\n",status.ds)
           ##text(0.5,0.5,"Please upload contrast file 'contrast.csv' with conditions on rows, contrasts as columns")
