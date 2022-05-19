@@ -779,7 +779,58 @@ makeContrastsFromLabelMatrix <- function(lab.matrix) {
     contr.mat
 }
 
+pgx.convertContrastsExplicit <- function(contrasts, samples) {
+  group.col <- grep("group", tolower(colnames(samples)))
+  group.col <- names(which(apply( samples, 2,
+    function(x) all(rownames(contrasts) %in% x))))
+  old1 = (length(group.col)>0 &&
+            nrow(contrasts) < nrow(samples) &&
+            all(rownames(contrasts) %in% samples[,group.col])
+  )
+  old2 = all(rownames(contrasts)==rownames(samples)) &&
+    all(unique(as.vector(contrasts)) %in% c(-1,0,1,NA))
+  
+  old.style <- (old1 || old2)
+  if(old.style && old1) {
     
+    message("[UploadModule] WARNING: converting old1 style contrast to new format")
+    new.contrasts <- samples[,0]
+    if(NCOL(contrasts)>0) {
+      new.contrasts <- contrastAsLabels(contrasts)
+      grp = as.character(samples[,group.col])
+      new.contrasts <- new.contrasts[grp,,drop=FALSE]
+      rownames(new.contrasts) <- rownames(samples)
+    }
+    dbg("[UploadModule] old.ct1 = ",paste(contrasts[,1],collapse=' '))
+    dbg("[UploadModule] old.nn = ",paste(rownames(contrasts),collapse=' '))
+    dbg("[UploadModule] new.ct1 = ",paste(new.contrasts[,1],collapse=' '))
+    dbg("[UploadModule] new.nn = ",paste(rownames(new.contrasts),collapse=' '))
+    
+    contrasts <- new.contrasts
+  }
+  if(old.style && old2 ) {
+    message("[UploadModule] WARNING: converting old2 style contrast to new format")
+    new.contrasts <- samples[,0]
+    if(NCOL(contrasts1)>0) {
+      new.contrasts <- contrastAsLabels(contrasts)
+      rownames(new.contrasts) <- rownames(samples)
+    }
+    contrasts <- new.contrasts
+  }
+  
+  ok.contrast <- length(intersect(rownames(samples),rownames(contrasts)))>0
+  if(ok.contrast && NCOL(contrasts)>0) {
+    ## always clean up
+    contrasts <- apply(contrasts,2,as.character)
+    rownames(contrasts) <- rownames(samples)
+    for(i in 1:NCOL(contrasts)) {
+      iszero = (contrasts[,i] %in% c(NA,"NA","NA ",""," ","  ","   "," NA"))
+      if(length(iszero)) contrasts[iszero,i] <- NA
+    }
+  }
+  contrasts
+}
+
 ##=====================================================================================
 ##=========================== END OF FILE =============================================
 ##=====================================================================================

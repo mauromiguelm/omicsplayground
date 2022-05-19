@@ -576,6 +576,7 @@ The <strong>Clustering Analysis</strong> module performs unsupervised clustering
         ## iHeatmap based splitted heatmap
         ##------------------------------------------------------------
         shiny::req(pgx$genes)
+        require(Cairo)
         
         ## -------------- variable to split samples        
         ##scale = ifelse(input$hm_scale=="relative","row.center","none")    

@@ -182,11 +182,6 @@ app_server <- function(input, output, session) {
         message("[SERVER] --------- calling shiny modules ----------")
         dbg("[SERVER] names(pgx) = ",names(PGX))        
 
-        loadModule <- function(...) {
-            id <- list(...)[[2]]
-            if(ENABLED[id])  env[[id]] <<- shiny::callModule(...)
-        }
-        
         ## TEMPORARY SOLUTION. All modules should use PGX eventually.
         inputData <- reactive({
             if(all(sapply(PGX,is.null))) return(NULL)
@@ -400,7 +395,6 @@ Upgrade today and experience advanced analysis features without the time limit.<
             
             showModal(modalDialog(
               msg,
-
               size = "m",
               easyClose = TRUE
             ))

@@ -156,24 +156,25 @@ PlotModuleUI <- function(id,
 ##zoom.button <- shinyBS::tipify(zoom.button, "Maximize", placement="right")  ## weird Cairo error!!!
         ##zoom.button <- with_tippy(zoom.button, "Maximize") ## not consistent...       
     }
+
+    info.button <- shinyWidgets::dropdownButton(
+      shiny::tags$p(shiny::HTML(info.text)),
+      shiny::br(),
+      circle = TRUE, size = "xs", ## status = "danger",
+      icon = shiny::icon("info"), width = info.width,
+      inputId = ns("info"), right=FALSE,
+      tooltip = shinyWidgets::tooltipOptions(title = "Info", placement = "right")
+    )
     
-    buttons <- shiny::fillRow(
+    header <- shiny::fillRow(
         flex = c(NA,1,NA,NA,NA,NA),
         ##flex=c(NA,NA,1),
         label1,
-##      shiny::HTML(paste("<center>",title,"</center>")),
-        shiny::div(class='plotmodule-title', title=title, title),        
-        shinyWidgets::dropdownButton(
-            shiny::tags$p(shiny::HTML(info.text)),
-            shiny::br(),
-            circle = TRUE, size = "xs", ## status = "danger",
-            icon = shiny::icon("info"), width = info.width,
-            inputId = ns("info"), right=FALSE,
-            tooltip = shinyWidgets::tooltipOptions(title = "Info", placement = "right")
-        ),
-        options.button,
-        shiny::div(class='download-button', title='download', dload.button),
-        shiny::div(class='zoom-button', title='zoom', zoom.button)
+        shiny::div(class='module-title', title),        
+        shiny::div(class='module-button', title='info', info.button),
+        shiny::div(class='module-button', title='options', options.button),
+        shiny::div(class='module-button', title='download', dload.button),        
+        shiny::div(class='module-button', title='zoom', zoom.button)
     )
     
     ## ------------------------------------------------------------------------
@@ -224,7 +225,7 @@ PlotModuleUI <- function(id,
         shiny::fillCol(
                flex = c(NA,1,NA,0.001,NA),
                height = height.1,
-               div( buttons, class="plotmodule-header"),
+               div( header, class="module-header"),
                outputFunc(ns("renderfigure"), width=width.1, height=height.1) %>% shinycssloaders::withSpinner(),                              
                caption,
                shiny::div(class="popup-plot",
@@ -656,8 +657,6 @@ PlotModuleServer <- function(
               download.png = download.png,
               download.html = download.html,
               download.csv = download.csv,
-              ##buttons = buttons,
-              ##getCaption = caption.fun,
               saveHTML = saveHTML,
               ## outputFunc = outputFunc,
               renderFunc = renderFunc

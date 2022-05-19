@@ -166,7 +166,7 @@ sever_screen <- function() {
                           shiny::br(),
                           shiny::tags$a(
                                           onClick = "sendLog()", 
-                                          class = "btn btn-sm btn-warning", 
+                                          class = "btn btn-sm btn-danger", 
                                           "Send error to developers"
                                       )
                       ),
@@ -178,7 +178,7 @@ sever_screen <- function() {
                shiny::br(),
                shiny::div(
                           id="sever-reload-btn",
-                          sever::reload_button("Relaunch", class = "info"),
+                          sever::reload_button("Relaunch", class = "danger"),
                           style="display:none;"             
                       )
            )
@@ -194,7 +194,7 @@ sever_screen0 <- function() {
                shiny::div(shiny::img(src=base64enc::dataURI(file="www/lost-in-space.gif"),
                           width=500,height=250)),
                shiny::br(),
-               sever::reload_button("Relaunch", class = "info")
+               sever::reload_button("Relaunch", class = "danger")
            )
 }
 
@@ -219,7 +219,7 @@ sever_screen2 <- function(session_id) {
       shiny::br(),
       shiny::tags$a(
         onClick = HTML(paste0("sendLog2('",session_id,"')")),
-        class = "btn btn-sm btn-warning", 
+        class = "btn btn-sm btn-danger", 
         "Send error to developers"
       )
     ),
@@ -231,7 +231,7 @@ sever_screen2 <- function(session_id) {
     shiny::br(),
     shiny::div(
       id="sever-reload-btn",
-      sever::reload_button("Relaunch", class = "info"),
+      sever::reload_button("Relaunch", class = "danger"),
       style="display:none;"             
     )
   )

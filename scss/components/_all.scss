@@ -12,8 +12,10 @@ html {
   }
 
   .control-label {
-    margin-bottom: 0px;
     margin-top: 2px;
+    margin-bottom: 20px;
+    font-weight: 600px;
+    font-size: 1.1em;
   }
 
   /* ---------------------------- template specfic -------------------------- */
@@ -213,14 +215,44 @@ html {
     min-width: 0vw;
   }
 
+  /* ------------------- dropdown menu -------------- */
+  .dropdown-menu {
+      transform: scale(0.8) !important;
+  }  
+  
   /* ------------------- buttons -------------- */
+
+  .btn,
+  .btn-default,
+  .input-group>.form-control
+  {
+//    background-color: #81A1C122;
+    padding: 4px 12px;
+    font-size: 15px;
+    margin: 0px;
+    border-radius: 5px;
+//    border: 1px solid #ced4da;
+  }
+
+  .btn:hover,
+  .btn:focus,
+  .btn:active,
+  .btn:active:hover {
+    border: 1px solid;
+  }
+
+  .module-button {
+    background-color: white;
+    border: 0px;
+  }
+
   .run-button,
   .load-button {
     outline: none;
     border-color: #1967be;
     box-shadow: 0 0 5px #1967be;
   }
-
+  
   .action-button .fab .fa {
     font-size: 16px;
     margin-top: 0px;
@@ -247,25 +279,10 @@ html {
     margin-bottom: -3px;
   }
 
-  .btn,
-  .btn-default {
-    padding: 4px 12px;
-    font-size: 15px;
-    margin: 0px;
-    border-radius: 3px;
-  }
-
   .modal-footer .btn {
     margin-left: 5px;
     margin-bottom: 0;
     font-size: 14px;
-  }
-
-  .btn:hover,
-  .btn:focus,
-  .btn:active,
-  .btn:active:hover {
-    border: 1px solid;
   }
 
   .red-button {
@@ -332,9 +349,9 @@ html {
   }
 
   div#navheader-current-section {
-    font-size: 1.3em;
+    font-size: 1.2em;
     font-weight: 600;
-    margin: 25px 0 0px 0;
+    margin: 22px 0 0 15px;
   }
 
   div#navheader-current-dataset {
@@ -419,4 +436,27 @@ html {
     line-height: 1.1em;
   }
 
+  #shiny-notification-panel {
+      position: fixed;
+      bottom: 25%;
+      left: 50%;
+      text-align: center;
+      background-color: rgba(0, 0, 0, 0);
+      padding: 2px;
+      width: 350px;
+      z-index: 99999;
+      transform: translateX(-50%) scale(1.5) !important;
+  }
+  .shiny-notification {
+      opacity: 1.0;
+  }
+
+  .form-check, .shiny-input-container .checkbox, .shiny-input-container .radio {
+      display: block;
+      min-height: 0rem;
+      padding-left: 0;
+      margin-bottom: 0.125rem;
+  }
+
+  
 }

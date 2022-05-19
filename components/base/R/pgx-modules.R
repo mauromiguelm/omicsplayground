@@ -40,9 +40,7 @@ addWatermark.PNG <- function(file) {
 ##================================================================================
 
 ## prepare ORCA server if we are not in a Docker
-
-
-initOrca <- function(launch=TRUE) {
+initOrca.DEPRECATED <- function(launch=TRUE) {
 
     responding.local = FALSE
     responding.docker = FALSE
@@ -319,34 +317,29 @@ plotModule <- function(input, output, session,
                                     class="btn-circle-xs")
         zoom.button <- withTooltip(zoom.button, "Maximize", placement="right")
     }
-    
-    ##output$renderbuttons <- shiny::renderUI({
+
+    info.button <- shinyWidgets::dropdownButton(
+      shiny::tags$p(shiny::HTML(info.text)),
+      shiny::br(),
+      circle = TRUE,
+      size = "xs", ## status = "danger",
+      icon = shiny::icon("info"),
+            width = info.width,
+      inputId = ns("info"),
+      right = FALSE,
+      tooltip = shinyWidgets::tooltipOptions(title = "Info", placement = "right")
+    )        
+   
     ## button layout
-    buttons <- shiny::fillRow(
-        flex = c(NA,NA,NA,NA,NA,1),
-        ##flex=c(NA,NA,1),
+    header <- shiny::fillRow(
+        flex = c(NA,1,NA,NA,NA,NA),
         label1,
-        ##div( class="button-group", style="display: inline-block; float: left;",
-        shinyWidgets::dropdownButton(
-            shiny::tags$p(shiny::HTML(info.text)),
-            shiny::br(),
-            circle = TRUE, size = "xs", ## status = "danger",
-            icon = shiny::icon("info"), width = info.width,
-            inputId = ns("info"), right=FALSE,
-            tooltip = shinyWidgets::tooltipOptions(title = "Info", placement = "right")
-        ),
-        options.button,
-        shiny::div(class='download-button', dload.button),
-        shiny::div(class='zoom-button', zoom.button),
-        ##),
-        shiny::HTML(paste("<center>",title,"</center>"))
-        ##HTML(paste("<center><strong>",title,"</strong></center>"))
-        ##shiny::br()
-        ##inputs
-        ##selectInput("sel123","number",1:10)
+        shiny::div(class='module-title', title),                
+        shiny::div(class='module-button', info.button),                        
+        shiny::div(class='module-button', options.button),        
+        shiny::div(class='module-button', dload.button),
+        shiny::div(class='module-button', zoom.button)
     )
-    ##return(ui)
-    ##})
     
     ##--------------------------------------------------------------------------------
     ##------------------------ FIGURE ------------------------------------------------
@@ -861,9 +854,8 @@ plotModule <- function(input, output, session,
                 shiny::tags$head(shiny::tags$style(modaldialog.style)),
                 shiny::tags$head(shiny::tags$style(modalbody.style)),            
                 shiny::tags$head(shiny::tags$style(modalfooter.none))
-            ),
-            
-            buttons,
+            ),            
+            div( header, class="module-header"),
             ##render,
             eval(parse(text=outputFunc))(ns("renderfigure"), width=width.1, height=height.1),
             shiny::br(),
@@ -891,8 +883,6 @@ plotModule <- function(input, output, session,
         download.png = download.png,
         download.html = download.html,
         download.csv = download.csv,
-        ##buttons = buttons,
-        ##getCaption = caption.fun,
         saveHTML = saveHTML,
         outputFunc = outputFunc,
         renderFunc = renderFunc
@@ -944,7 +934,7 @@ tableModule <- function(input, output, session,
         )
     }
 
-    if(!is.null(label) && label!="") label <- paste0("(",label,")")
+    ##if(!is.null(label) && label!="") label <- paste0("(",label,")")
     label1 = shiny::HTML(paste0("<span class='module-label'>",label,"</span>"))
     
     zoom.button <- modalTrigger(
@@ -954,11 +944,11 @@ tableModule <- function(input, output, session,
         class="btn-circle-xs"
     )
     
-    buttons <- shiny::fillRow(
+    header <- shiny::fillRow(
         ##flex=c(NA,NA,NA,NA,1),
         flex=c(NA,1,NA,NA,NA,NA),
         label1,
-        shiny::div(class='plotmodule-title', title=title, title),        
+        shiny::div(class='module-title', title),        
         shinyWidgets::dropdownButton(
                           shiny::tags$p(shiny::HTML(info.text)),
                           shiny::br(),
@@ -968,7 +958,7 @@ tableModule <- function(input, output, session,
                           tooltip = shinyWidgets::tooltipOptions(title = "Info", placement = "right")
                       ),
         options.button,
-        shiny::div(class='download-button',
+        shiny::div(class='module-button',
                    shinyWidgets::dropdownButton(
                                      shiny::downloadButton(ns("csv"), "CSV"),
                                      circle = TRUE, size = "xs", ## status = "danger",
@@ -976,7 +966,7 @@ tableModule <- function(input, output, session,
                                      tooltip = shinyWidgets::tooltipOptions(title = "Download",
                                                                             placement = "right")
                                  )),
-        zoom.button
+        shiny::div(class='module-button', zoom.button)
     )
     
     CSVFILE = paste0(gsub("file","data",tempfile()),".csv")
@@ -1043,7 +1033,7 @@ tableModule <- function(input, output, session,
               shiny::tags$head(shiny::tags$style(modaldialog.style)),
               shiny::tags$head(shiny::tags$style(modalbody.style)),
               shiny::tags$head(shiny::tags$style(modalfooter.none)),
-              div(buttons, class="tablewidget-header"),
+              div(header, class="module-header"),
               div.caption,
               DT::DTOutput(ns("datatable"), width=width.1, height=height.1),
               shiny::div(class="popup-table",

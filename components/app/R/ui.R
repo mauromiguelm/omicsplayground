@@ -150,11 +150,11 @@ app_ui <- function() {
                 bigdash::sidebarMenu(
                     "Clustering",
                     bigdash::sidebarMenuItem(
-                        "Cluster samples",
+                        "Samples",
                         "clustersamples-tab"
                     ),
                     bigdash::sidebarMenuItem(
-                        "Cluster features",
+                        "Features",
                         "clusterfeatures-tab"
                     ),
                     bigdash::sidebarMenuItem(
@@ -366,8 +366,8 @@ app_ui <- function() {
                 ),
                 bigdash::bigTabItem(
                     "upload-tab",
-                    # UploadInputs("upload"),
-                    UploadUI("upload")
+                    UploadBoardInputs("upload"),
+                    UploadBoardUI("upload")
                 ),
                 bigdash::bigTabItem(
                     "dataview-tab",

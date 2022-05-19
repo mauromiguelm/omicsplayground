@@ -2,4 +2,14 @@ html {
   .table-widget {
     padding: 0;
   }
+
+  table.dataTable {
+      border-collapse: collapse !important;
+  }
+
+  table.dataTable td {
+      vertical-align: middle;
+      padding: 3px 8px;
+  }
+
 }

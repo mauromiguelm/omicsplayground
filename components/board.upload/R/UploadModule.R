@@ -8,23 +8,68 @@
 ##================================================================================
 
 UploadModuleUI <- function(id) {
-    ns <- shiny::NS(id)
-    ui <- shiny::tabsetPanel(
-        id = ns("tabs"),
-        ## type = "pills",
-        ## type = "hidden",
-        shiny::tabPanel("Upload", shiny::uiOutput(ns("upload_UI"))),
-        ## shiny::tabPanel("Normalize", shiny::uiOutput(ns("normalize_UI"))),
-        shiny::tabPanel("BatchCorrect", shiny::uiOutput(ns("batchcorrect_UI"))),
-        shiny::tabPanel("Contrasts", shiny::uiOutput(ns("contrasts_UI"))),
-        shiny::tabPanel("Compute", shiny::uiOutput(ns("compute_UI")))
-    )    
-    ui
+  ns <- shiny::NS(id)
+
+  csv.info <- "Upload your counts as 'counts.csv' and sample information as 'samples.csv'. The file format must be comma-separated-values (CSV) text. Check that dimensions, rownames and column names match for all files. You can download a zip file with example files here: exampledata.zip. You can upload a maximum of 100 datasets (with each up to 2000 samples and 100 comparisons)."
+  
+  fluidPage(
+    shiny::fluidRow(
+      shiny::column(3,
+        shiny::tabsetPanel(
+          shiny::tabPanel(
+            "Upload CSV",
+            br(),
+            ##h4("Upload from CSV file"),
+            csv.info,
+            br(), br(),
+            shiny::fileInput(ns("upload_files"),"Choose file:"),
+            ##shinyWidgets::prettySwitch(ns("load_example"), "load example data", value=FALSE)
+            actionButton(ns("load_example"), "load example data", class="btn-outline-success")          
+          ),
+          shiny::tabPanel(
+            "Retrieve GEO",
+            br(),
+            h4("Retrieve from GEO"),          
+            "Please enter the GEO id. We try to download the data automatically. Warning: this does not alwyas work and you may need to download the data manually from GEO.",
+            br(), br(),
+            shiny::textInput(ns("geoID"), "Enter GEO id:"),
+            shiny::actionButton(ns("geoLoad"),"Retrieve from GEO")
+          )
+        ) ## end of tabsetPanel
+      ), 
+      column(9,
+        CheckDataUI(ns("chkdata"))
+      )
+    ),      
+    shiny::fluidRow(
+      tabsetPanel(
+        tabPanel(
+          "Counts",
+          div(DT::dataTableOutput(ns("countstable"), width="100%"),
+            style = "height:250px; overflow-y:scroll; overflow-x:scroll;")
+        ),
+        tabPanel(
+          "Samples",
+          div(
+            DT::dataTableOutput(ns("sampletable"), width="100%"),
+            style = "height:250px; overflow-y:scroll; overflow-x:scroll;"
+          )
+        ),
+        tabPanel(
+          "Contrasts",
+          div(
+            DT::dataTableOutput(ns("contrasttable"), width="100%"),
+            style = "height:250px; overflow-y:scroll; overflow-x:scroll;"        
+          )
+        )
+      )  ## end of tabsetPanel
+    )  ## end of fluidRow
+  )  ## end of fluidPage
+    
 }
 
 UploadModuleServer <- function(id, 
                                FILES,
-                               pgx.dirRT,
                                height = 720,
                                limits = c(
                                    samples = 100,
@@ -40,17 +85,8 @@ UploadModuleServer <- function(id,
 
             ns <- session$ns
             ## ns <- shiny::NS(id)
-            
-            dbg("[UploadModuleServer] called!")            
-            dbg("[UploadModuleServer] limits.samples = ",limits['samples'])
-            dbg("[UploadModuleServer] limits.comparisons = ",limits['comparisons'])
-            dbg("[UploadModuleServer] limits.genes   = ",limits['genes'])
-            dbg("[UploadModuleServer] limits.genesets = ",limits['genesets'])
-            dbg("[UploadModuleServer] limits.datasets = ",limits['datasets'])
-            
-            ## Some 'global' reactive variables used in this file
-            uploaded <- shiny::reactiveValues()
-
+                      
+          
             output$downloadExampleData <- shiny::downloadHandler(
                 filename = "exampledata.zip",
                 content = function(file) {
@@ -75,80 +111,28 @@ UploadModuleServer <- function(id,
             ##================================= UI ===================================
             ##========================================================================
 
-            output$upload_UI <- shiny::renderUI({
+          ## Some 'global' reactive variables used in this file
+            uploaded <- shiny::reactiveValues(
+              counts.csv = NULL,
+              samples.csv = NULL,
+              contrasts.csv =  NULL,
+              pgx = NULL,
+              meta = NULL
+            )
 
-                shiny::fillCol(
-                    height = height,
-                    ##flex = c(NA,0.05,1.6,0.05,NA),
-                    flex = c(NA,0.05,1.6),
-                    shiny::sidebarLayout(
-                        shiny::sidebarPanel(
-                            width = 3,
-                            ## shiny::helpText("User file upload"),
-                            shiny::fileInput(ns("upload_files"), "Choose files",
-                                      multiple = TRUE, accept = upload_filetypes),
-                            ##checkboxInput(ns("load_example"), "load example data"),
-                            shinyWidgets::prettySwitch(ns("load_example"), "load example data"),
-                            ##checkboxInput(ns("advanced_mode"),"advanced")
-                            ##shinyWidgets::prettySwitch(ns("advanced_mode"),"advanced")
-                            shinyWidgets::prettySwitch(ns("advanced_mode"),"batch correction (beta)")
-                        ),
-                        shiny::mainPanel(
-                            width = 9,
-                            shiny::fillRow(
-                                flex = c(0.04,1),
-                                shiny::br(),
-                                ##div(shiny::HTML(upload_info),style="font-size: 14px;")
-                                shiny::div(shiny::HTML(upload_info))
-                            )
-                        )
-                    ),
-                    shiny::br(),
-                    shiny::fillRow(
-                        flex = c(0.75,1,1),
-                        shiny::plotOutput(ns("countStats")) %>% shinycssloaders::withSpinner(),
-                        shiny::plotOutput(ns("phenoStats")) %>% shinycssloaders::withSpinner(),
-                        shiny::plotOutput(ns("contrastStats")) %>% shinycssloaders::withSpinner()
-                    )
-                    ##br(), 
-                    ##DT::dataTableOutput(ns("checkTablesOutput"))
-                )
-            }) ## end-of-renderUI
-            
-            output$batchcorrect_UI <- shiny::renderUI({
-                shiny::fillCol(
-                    height = height, ## width = 1200,
-                    BatchCorrectUI(ns("batchcorrect"))
-                )                
-            })
-
-            output$normalize_UI <- shiny::renderUI({
-                shiny::fillCol(
-                    height = height, ## width = 1200,
-                    NormalizeCountsUI(ns("normalize"))                    
-                )                
-            })
-            
-            output$contrasts_UI <- shiny::renderUI({
-                shiny::fillCol(
-                    height = height, ## width = 1200,
-                    MakeContrastUI(ns("makecontrast"))
-                )                
-            })
-            shiny::outputOptions(output, "contrasts_UI", suspendWhenHidden=FALSE) ## important!!!
-            
-            output$compute_UI <- shiny::renderUI({
-                shiny::fillCol(
-                    height = height, ## width = 1200,
-                    ComputePgxUI(ns("compute"))                    
-                )                
-            })
+          
+          CheckDataModule(
+            "chkdata",
+            countsRT    = shiny::reactive(uploaded$counts.csv), 
+            samplesRT   = shiny::reactive(uploaded$samples.csv),
+            contrastsRT = shiny::reactive(uploaded$contrasts.csv)
+          ) 
 
             ##=====================================================================
             ##============================== TABS =================================
             ##=====================================================================            
 
-            if(1) {
+            if(0) {
                 ## Hide/show tabpanels upon available data like a wizard dialog
                 ##shiny::observeEvent( names(uploaded), {
                 shiny::observe({                                    
@@ -192,11 +176,13 @@ UploadModuleServer <- function(id,
             
             shiny::observeEvent( input$advanced_mode, {
                 if(input$advanced_mode) {
-                    shiny::showTab("tabs", "Normalize")   ## NOT YET!!!
+                  shiny::showTab("tabs", "Normalize")   ## NOT YET!!!
                     shiny::showTab("tabs", "BatchCorrect")
                 } else {
                     shiny::hideTab("tabs", "Normalize")
                     shiny::hideTab("tabs", "BatchCorrect")
+                    message("[UploadModule] hiding tab:",paste0(ns("wiz"),"-page2"))
+                    shiny::hideTab("wiz", "page2")                    
                 }
             })
             
@@ -319,8 +305,8 @@ UploadModuleServer <- function(id,
                 message("[upload_files] upload_files$datapath=",input$upload_files$datapath)
                 
                 ##for(i in 1:length(uploaded)) uploaded[[i]] <- NULL
-                uploaded[["pgx"]] <- NULL
-                uploaded[["last_uploaded"]] <- NULL
+                uploaded$pgx <- NULL
+                uploaded$last_uploaded <- NULL
                 
                 ## read uploaded files
                 pgx.uploaded <- any(grepl("[.]pgx$",input$upload_files$name))
@@ -338,7 +324,7 @@ UploadModuleServer <- function(id,
                     ##matlist[["counts.csv"]] <- ngs$counts
                     ##matlist[["samples.csv"]] <- type.convert(ngs$samples)
                     ##matlist[["contrasts.csv"]] <- ngs$model.parameters$exp.matrix
-                    uploaded[["pgx"]] <- ngs
+                    uploaded$pgx <- ngs
                     
                 } else {
 
@@ -363,7 +349,6 @@ UploadModuleServer <- function(id,
                             matname <- NULL
                             df <- NULL
                             if(grepl("count",fn1, ignore.case=TRUE)) {
-                                dbg("[upload_files] counts.csv : fn1 = ",fn1)
                                 ## allows duplicated rownames
                                 df0 <- read.as_matrix(fn2)
                                 if(TRUE && any(duplicated(rownames(df0)))) {
@@ -377,8 +362,6 @@ UploadModuleServer <- function(id,
                                     closeOnClickOutside = FALSE,
                                   )
                                 }
-                                dbg("[upload_files] counts.csv : 1 : dim(df0) = ",
-                                    paste(dim(df0),collapse='x'))
                                 
                                 if(nrow(df0)>1 && NCOL(df0)>1) {
                                   df <- as.matrix(df0)
@@ -386,7 +369,6 @@ UploadModuleServer <- function(id,
                                 }
                                 
                             } else if(grepl("expression",fn1,ignore.case=TRUE)) {
-                                dbg("[upload_files] expression.csv : fn1 = ",fn1)
                                 ## allows duplicated rownames
                                 df0 <- read.as_matrix(fn2)
                                 if(TRUE && any(duplicated(rownames(df0)))) {
@@ -408,7 +390,6 @@ UploadModuleServer <- function(id,
                                 }
                                 
                             } else if(grepl("sample",fn1,ignore.case=TRUE)) {
-                                dbg("[upload_files] samples.csv : fn1 = ",fn1)
                                 df0 <- read.as_matrix(fn2)
                                 if(any(duplicated(rownames(df0)))) {
                                   dup.rows <- rownames(df0)[which(duplicated(rownames(df0)))]
@@ -430,7 +411,6 @@ UploadModuleServer <- function(id,
                                }
                               
                             } else if(grepl("contrast",fn1,ignore.case=TRUE)) {
-                                dbg("[upload_files] contrasts.csv : fn1 = ",fn1)
                                 df0 <- read.as_matrix(fn2)
                                 if(any(duplicated(rownames(df0)))) {
                                   dup.rows <- rownames(df0)[which(duplicated(rownames(df0)))]
@@ -447,6 +427,7 @@ UploadModuleServer <- function(id,
                                   )
                                 } else if(nrow(df0)>1 && NCOL(df0)>=1) {
                                     df <- as.matrix(df0)
+                                    
                                     matname <- "contrasts.csv"
                                 }
                           }
@@ -486,7 +467,7 @@ UploadModuleServer <- function(id,
                         message("[upload_files] updating matrix ",m1)                        
                         uploaded[[m1]] <- matlist[[i]]
                     }
-                    uploaded[["last_uploaded"]] <- names(matlist)
+                    uploaded$last_uploaded <- names(matlist)
                 }
                 
                 message("[upload_files] done!\n")
@@ -501,27 +482,33 @@ UploadModuleServer <- function(id,
             ## trigger the computePGX module.
             ## ------------------------------------------------------------------
             shiny::observeEvent( input$load_example, {
-                if(input$load_example) {
-                    zipfile = file.path(FILES,"exampledata.zip")
-                    readfromzip1 <- function(file) {
-                        read.csv(unz(zipfile, file), check.names=FALSE, stringsAsFactors=FALSE,
-                                 row.names=1)
-                    }
-                    readfromzip2 <- function(file) {
-                        ## allows for duplicated names
-                        df0 <- read.csv(unz(zipfile, file), check.names=FALSE, stringsAsFactors=FALSE)
-                        mat <- as.matrix(df0[,-1])
-                        rownames(mat) <- as.character(df0[,1])
-                        mat
-                    }
-                    uploaded$counts.csv <- readfromzip2("exampledata/counts.csv")
-                    uploaded$samples.csv <- readfromzip1("exampledata/samples.csv")
-                    uploaded$contrasts.csv <- readfromzip1("exampledata/contrasts.csv")
-                } else {
-                    uploaded$counts.csv <- NULL
-                    uploaded$samples.csv <- NULL
-                    uploaded$contrasts.csv <- NULL
+
+              dbg("[UploadModule] loading example data")
+              dbg("[UploadModule] input$load_example = ",input$load_example)              
+
+              if(input$load_example) {
+                zipfile = file.path(FILES,"exampledata.zip")
+                readfromzip1 <- function(file) {
+                  read.csv(unz(zipfile, file), check.names=FALSE, stringsAsFactors=FALSE,
+                    row.names=1)
                 }
+                readfromzip2 <- function(file) {
+                  ## allows for duplicated names
+                  df0 <- read.csv(unz(zipfile, file), check.names=FALSE, stringsAsFactors=FALSE)
+                  mat <- as.matrix(df0[,-1])
+                  rownames(mat) <- as.character(df0[,1])
+                  mat
+                }
+                uploaded$counts.csv <- readfromzip2("exampledata/counts.csv")
+                uploaded$samples.csv <- readfromzip1("exampledata/samples.csv")
+                uploaded$contrasts.csv <- readfromzip1("exampledata/contrasts.csv")
+                
+              } else {
+                dbg("[UploadModule] resetting upload")
+                uploaded$counts.csv <- NULL
+                uploaded$samples.csv <- NULL
+                uploaded$contrasts.csv <- NULL
+              }
             })
 
             ##------------------------------------------------------------------
@@ -691,248 +678,18 @@ UploadModuleServer <- function(id,
             ##========================= SUBMODULES/SERVERS ========================
             ##=====================================================================            
 
-            ##correctedX <- shiny::reactive({
-            normalized_counts <- NormalizeCountsServerRT(
-                id = "normalize",
-                counts = shiny::reactive(uploaded$counts.csv),
-                height = height
-            )
-            
-            ##correctedX <- shiny::reactive({
-            correctedX <- BatchCorrectServer(
-                id = "batchcorrect",
-                X = shiny::reactive(uploaded$counts.csv),
-                ##X = normalized_counts,  ## NOT YET!!!!
-                is.count = TRUE,
-                pheno = shiny::reactive(uploaded$samples.csv),
-                height = height
-            )
-            
-            corrected_counts <- shiny::reactive({
-                counts <- NULL
-                dbg("[UploadModule::corrected_counts] reacted!\n")                
-                advanced_mode <- ( length(input$advanced_mode)>0 &&
-                                   input$advanced_mode[1]==1 )
-                if(advanced_mode) {
-                    message("[UploadModule::corrected_counts] using CORRECTED counts\n")
-                    out <- correctedX()
-                    counts <- pmax(2**out$X-1, 0)
-                } else {
-                    message("[UploadModule::corrected_counts] using UNCORRECTED counts\n")
-                    counts <- uploaded$counts.csv
-                }
-                counts
-            })
-
-            ##mkContrast <- shiny::reactive({
-            modified_ct <- MakeContrastServerRT(
-                id = "makecontrast",
-                phenoRT = shiny::reactive(uploaded$samples.csv),
-                contrRT = shiny::reactive(uploaded$contrasts.csv),
-                ##countsRT = shiny::reactive(uploaded$counts.csv),
-                countsRT = corrected_counts,
-                height = height
-            )
-            
-            shiny::observeEvent( modified_ct(), {
-                ## Monitor for changes in the contrast matrix and if
-                ## so replace the uploaded reactive values.
-                ##
-                dbg("[observe:modified_ct()] reacted...")                
-                modct <- modified_ct()
-                dbg("[observe:modified_ct()] dim(modct$contr) = ",dim(modct$contr))
-                uploaded$contrasts.csv <- modct$contr
-                uploaded$samples.csv   <- modct$pheno
-
-            })
-
             upload_ok <- shiny::reactive({
                 dbg("[UploadModule] upload_ok reactive")
-                check <- checkTables()
+                check <- checkUpload()
                 all(check[,"status"]=="OK")
                 all(grepl("ERROR",check[,"status"])==FALSE)
-            })
-
-            batch_vectors <- shiny::reactive({
-                dbg("batch_vectors reactive")
-                correctedX()$B
-            })
-            
-            ##computed_pgx <- ComputePgxServer(
-            computed_pgx  <- ComputePgxServer(
-                id = "compute", 
-                ##countsRT = shiny::reactive(uploaded$counts.csv),
-                countsRT = corrected_counts,
-                samplesRT = shiny::reactive(uploaded$samples.csv),
-                contrastsRT = shiny::reactive(uploaded$contrasts.csv),
-                batchRT = batch_vectors, 
-                metaRT = shiny::reactive(uploaded$meta),                
-                enable_button = upload_ok,
-                alertready = FALSE,
-                FILES = FILES,
-                pgx.dirRT = shiny::reactive(pgx.dirRT()),
-                max.genes = as.integer(limits["genes"]),
-                max.genesets = as.integer(limits["genesets"]),
-                max.datasets = as.integer(limits["datasets"]),
-                height = height
-            )          
-            
-            uploaded_pgx <- shiny::reactive({
-                dbg("[uploaded_pgx] reacted!")
-                if(!is.null(uploaded$pgx)) {
-                    pgx <- uploaded$pgx
-                    ##pgx <- pgx.initialize(pgx)
-                } else {
-                    pgx <- computed_pgx()
-                }
-                return(pgx)
             })
 
             ##=====================================================================
             ##===================== PLOTS AND TABLES ==============================
             ##=====================================================================            
-
-            output$countStats <- shiny::renderPlot({
-
-                dbg("[countStats] renderPlot called")
-                ##req(uploaded$counts.csv)                
-
-                check <- checkTables()
-                status.ok <- check["counts.csv","status"]                
-                dbg("[countStats] status.ok = ",status.ok)
-
-                if(status.ok!="OK") {
-                    frame()
-                    status.ds <- check["counts.csv","description"]
-                    msg <- paste(toupper(status.ok),"\n\n","(Required) Upload 'counts.csv'",
-                                 tolower(status.ds))
-                    graphics::text(0.5,0.5,paste(strwrap(msg,30),collapse="\n"),col="grey25")
-                    graphics::box(lty=2, col="grey60")
-                    return(NULL)
-                }
                 
-                counts <- uploaded[["counts.csv"]]
-                xx <- log2(1 + counts)
-                if(nrow(xx)>1000) xx <- xx[sample(1:nrow(xx),1000),,drop=FALSE]
-                ##dc <- reshape::melt(xx)
-                suppressWarnings( dc <- data.table::melt(xx) )
-                dc$value[dc$value==0] <- NA
-                tt2 <- paste(nrow(counts),"genes x",ncol(counts),"samples")
-                ggplot2::ggplot(dc, ggplot2::aes(x=value, color=Var2)) +
-                    ggplot2::geom_density() + ggplot2::xlab("log2(1+counts)") +
-                    ggplot2::theme( legend.position = "none") +
-                    ggplot2::ggtitle("COUNTS", subtitle=tt2)
-            })
-
-            output$phenoStats <- shiny::renderPlot({
-
-                dbg("[phenoStats] renderPlot called \n")
-                ##req(uploaded$samples.csv)                
-                
-                check <- checkTables()
-                status.ok <- check["samples.csv","status"]                
-                if(status.ok!="OK") {
-                    frame()
-                    status.ds <- check["samples.csv","description"]
-                    msg <- paste(toupper(status.ok),"\n\n","(Required) Upload 'samples.csv'",
-                                 tolower(status.ds))
-                    graphics::text(0.5,0.5,paste(strwrap(msg,30),collapse="\n"),col="grey25")
-                    graphics::box(lty=2, col="grey60")
-                    return(NULL)
-                }
-                
-                pheno <- uploaded[["samples.csv"]]                
-                px <- head(colnames(pheno),20)  ## show maximum??
-
-                df <- type.convert(pheno[,px,drop=FALSE])
-                vt <- df %>% inspectdf::inspect_types()
-                vt
-                
-                ## discretized continuous variable into 10 bins
-                ii <- unlist(vt$col_name[c("numeric","integer")])
-                ii
-                if(!is.null(ii) && length(ii)) {
-                    cat("[UploadModule::phenoStats] discretizing variables:",ii,"\n")
-                    df[,ii] <- apply(df[,ii,drop=FALSE], 2, function(x) {
-                        if(any(is.infinite(x))) x[which(is.infinite(x))] <- NA
-                        cut(x, breaks=10)
-                    })
-                }
-                
-                p1 <- df %>% inspectdf::inspect_cat() %>% inspectdf::show_plot()
-                tt2 <- paste(nrow(pheno),"samples x",ncol(pheno),"phenotypes")
-                ## tt2 <- paste(ncol(pheno),"phenotypes")
-                p1 <- p1 + ggplot2::ggtitle("PHENOTYPES", subtitle=tt2) +
-                    ggplot2::theme(
-                        ##axis.text.x = ggplot2::element_text(size=8, vjust=+5),
-                        axis.text.y = ggplot2::element_text(
-                            size = 12,
-                            margin = ggplot2::margin(0,0,0,25),
-                            hjust = 1)
-                    )
-
-                dbg("[UploadModule::phenoStats] done!")
-                
-                p1
-            })
-            
-            output$contrastStats <- shiny::renderPlot({
-                
-                ##req(uploaded$contrasts.csv)
-                ct <- uploaded$contrasts.csv
-                has.contrasts <- !is.null(ct) && NCOL(ct)>0
-                check <- checkTables()
-                status.ok <- check["contrasts.csv","status"]
-
-                dbg("[output$contrastStats] status.ok = ",status.ok)
-                dbg("[output$contrastStats] has.contrasts = ",has.contrasts)
-                dbg("[output$contrastStats] dim(uploaded$contrasts.csv) = ",
-                        dim(uploaded$contrasts.csv))
-                
-                if( status.ok!="OK" || !has.contrasts) {
-                    frame()
-                    status.ds <- check["contrasts.csv","description"]
-                    msg <- paste(toupper(status.ok),"\n\n","(Optional) Upload 'contrasts.csv'",
-                                 tolower(status.ds))
-                    ##text(0.5,0.5,"Please upload contrast file 'contrast.csv' with conditions on rows, contrasts as columns")
-                    graphics::text(0.5,0.5,paste(strwrap(msg,30),collapse="\n"),col="grey25")
-                    graphics::box(lty=2, col="grey60")
-                    return(NULL)
-                }
-
-                dbg("[output$contrastStats] 2 : ")
-                
-                contrasts <- uploaded$contrasts.csv
-
-                dbg("[output$contrastStats] 3 : ")                
-
-                ##contrasts <- sign(contrasts)
-                ##df <- contrastAsLabels(contrasts)
-                df <- contrasts
-                px <- head(colnames(df),20)  ## maximum to show??
-                df <- data.frame(df[,px,drop=FALSE],check.names=FALSE)
-                tt2 <- paste(nrow(contrasts),"samples x",ncol(contrasts),"contrasts")
-                ##tt2 <- paste(ncol(contrasts),"contrasts")
-                dbg("[output$contrastStats] 4a : dim.df=",dim(df))                
-
-                p1 <- df %>% inspectdf::inspect_cat() %>% inspectdf::show_plot()                    
-                dbg("[output$contrastStats] 4b : ")
-                
-                p1 <- p1 + ggplot2::ggtitle("CONTRASTS", subtitle=tt2) +
-                    ggplot2::theme(
-                        ##axis.text.x = ggplot2::element_text(size=8, vjust=+5),
-                        axis.text.y = ggplot2::element_text(size = 12,
-                                                   margin = ggplot2::margin(0,0,0,25),
-                                                   hjust = 1)
-                    )
-
-                dbg("[output$contrastStats] 5 : ")                
-                
-                p1
-            })
-            
-            
-            checkTables <- shiny::reactive({        
+            checkUpload <- shiny::reactive({        
                 ##
                 ##
                 ##
@@ -955,7 +712,7 @@ UploadModuleServer <- function(id,
                 }
 
                 has.pgx <- ("pgx" %in% names(uploaded))
-                if(has.pgx) has.pgx <- has.pgx && !is.null(uploaded[["pgx"]])
+                if(has.pgx) has.pgx <- has.pgx && !is.null(uploaded$pgx)
                 if(has.pgx==TRUE) {
                     
                     ## Nothing to check. Always OK.            
@@ -965,21 +722,21 @@ UploadModuleServer <- function(id,
                     ## check rownames of samples.csv
                     if(status["samples.csv"]=="OK" && status["counts.csv"]=="OK") {
                         
-                        samples1 <- uploaded[["samples.csv"]]
-                        counts1  <- uploaded[["counts.csv"]]
+                        samples1 <- uploaded$samples.csv
+                        counts1  <- uploaded$counts.csv
                         a1 <- mean(rownames(samples1) %in% colnames(counts1))
                         a2 <- mean(samples1[,1] %in% colnames(counts1))
                         
                         if(a2 > a1 && NCOL(samples1)>1 ) {
                             message("[UploadModuleServer] getting sample names from first column\n")
                             rownames(samples1) <- samples1[,1]
-                            uploaded[["samples.csv"]] <- samples1[,-1,drop=FALSE]
+                            uploaded$samples.csv <- samples1[,-1,drop=FALSE]
                         }                        
                     }
                     
                     ## check files: matching dimensions
                     if(status["counts.csv"]=="OK" && status["samples.csv"]=="OK") {
-                        nsamples   <- max( ncol(uploaded[["counts.csv"]]), nrow(uploaded[["samples.csv"]]) )
+                        nsamples   <- max( ncol(uploaded$counts.csv), nrow(uploaded$samples.csv) )
                         ok.samples <- intersect(rownames(uploaded$samples.csv),
                                                 colnames(uploaded$counts.csv))
                         n.ok <- length(ok.samples)
@@ -990,8 +747,8 @@ UploadModuleServer <- function(id,
 
                         if(n.ok > 0) {
                             message("[UploadModule::checkTables] conforming samples/counts...")
-                            uploaded[["samples.csv"]] <- uploaded$samples.csv[ok.samples,,drop=FALSE]
-                            uploaded[["counts.csv"]]  <- uploaded$counts.csv[,ok.samples,drop=FALSE]
+                            uploaded$samples.csv <- uploaded$samples.csv[ok.samples,,drop=FALSE]
+                            uploaded$counts.csv  <- uploaded$counts.csv[,ok.samples,drop=FALSE]
                         }
 
                         if(n.ok == 0) {
@@ -999,66 +756,19 @@ UploadModuleServer <- function(id,
                             status["samples.csv"] = "ERROR: rownames do not match (with counts)"
                         }
 
-                        dbg("[UploadModule::checkTables] dim(samples.csv) = ",dim(uploaded$samples.csv))
-                        dbg("[UploadModule::checkTables] dim(counts.csv) = ",dim(uploaded$counts.csv))
-                        
                     }
-                    
+                                                     
                     if(status["contrasts.csv"]=="OK" && status["samples.csv"]=="OK") {
-                        samples1   <- uploaded[["samples.csv"]]
-                        contrasts1 <- uploaded[["contrasts.csv"]]
-                        group.col <- grep("group", tolower(colnames(samples1)))
-                        old1 = (length(group.col)>0 &&
-                                nrow(contrasts1) < nrow(samples1) &&
-                                all(rownames(contrasts1) %in% samples1[,group.col])
-                        )
-                        old2 = all(rownames(contrasts1)==rownames(samples1)) &&
-                            all(unique(as.vector(contrasts1)) %in% c(-1,0,1,NA))
-
-                        old.style <- (old1 || old2)
-                        if(old.style && old1) {
-
-                            message("[UploadModule] WARNING: converting old1 style contrast to new format")
-                            new.contrasts <- samples1[,0]
-                            if(NCOL(contrasts1)>0) {
-                                new.contrasts <- contrastAsLabels(contrasts1)
-                                grp = as.character(samples1[,group.col])
-                                new.contrasts <- new.contrasts[grp,,drop=FALSE]
-                                rownames(new.contrasts) <- rownames(samples1)
-                            }
-                            dbg("[UploadModule] old.ct1 = ",paste(contrasts1[,1],collapse=' '))
-                            dbg("[UploadModule] old.nn = ",paste(rownames(contrasts1),collapse=' '))
-                            dbg("[UploadModule] new.ct1 = ",paste(new.contrasts[,1],collapse=' '))
-                            dbg("[UploadModule] new.nn = ",paste(rownames(new.contrasts),collapse=' '))
-                            
-                            contrasts1 <- new.contrasts
-                        }
-                        if(old.style && old2 ) {
-                            message("[UploadModule] WARNING: converting old2 style contrast to new format")
-                            new.contrasts <- samples1[,0]
-                            if(NCOL(contrasts1)>0) {
-                                new.contrasts <- contrastAsLabels(contrasts1)
-                                rownames(new.contrasts) <- rownames(samples1)
-                            }
-                            contrasts1 <- new.contrasts
-                        }
-
-                        dbg("[UploadModule] 1 : dim.contrasts1 = ",dim(contrasts1))
-                        dbg("[UploadModule] 1 : dim.samples1   = ",dim(samples1))
-
-                        ok.contrast <- length(intersect(rownames(samples1),rownames(contrasts1)))>0
-                        if(ok.contrast && NCOL(contrasts1)>0) {
-                            ## always clean up
-                            contrasts1 <- apply(contrasts1,2,as.character)
-                            rownames(contrasts1) <- rownames(samples1)
-                            for(i in 1:ncol(contrasts1)) {
-                                isz = (contrasts1[,i] %in% c(NA,"NA","NA ",""," ","  ","   "," NA"))
-                                if(length(isz)) contrasts1[isz,i] <- NA
-                            }
-                            uploaded[["contrasts.csv"]] <- contrasts1
+                        samples1   <- uploaded$samples.csv
+                        contrasts1 <- uploaded$contrasts.csv                        
+                        contrasts.new <- pgx.convertContrastsExplicit(contrasts1, samples1)
+                        ok.contrast <- all(rownames(samples1) == rownames(contrasts.new))
+                        ok.contrast                        
+                        if(ok.contrast && NCOL(contrasts.new)>0) {
+                            uploaded$contrasts.csv <- contrasts.new
                             status["contrasts.csv"] <- "OK"
                         } else {
-                            uploaded[["contrasts.csv"]] <- NULL
+                            uploaded$contrasts.csv <- NULL
                             status["contrasts.csv"] <- "ERROR: dimension mismatch"
                         }
                     }
@@ -1070,25 +780,25 @@ UploadModuleServer <- function(id,
 
                     ## check files: maximum contrasts allowed
                     if(status["contrasts.csv"]=="OK") {
-                        if( ncol(uploaded[["contrasts.csv"]]) > MAXCONTRASTS ) {
+                        if( ncol(uploaded$contrasts.csv) > MAXCONTRASTS ) {
                             status["contrasts.csv"] = paste("ERROR: max",MAXCONTRASTS,"contrasts allowed")
                         }
                     }
                     
                     ## check files: maximum samples allowed
                     if(status["counts.csv"]=="OK" && status["samples.csv"]=="OK") {
-                        if( ncol(uploaded[["counts.csv"]]) > MAXSAMPLES ) {
+                        if( ncol(uploaded$counts.csv) > MAXSAMPLES ) {
                             status["counts.csv"]  = paste("ERROR: max",MAXSAMPLES," samples allowed")
                         }
-                        if( nrow(uploaded[["samples.csv"]]) > MAXSAMPLES ) {
+                        if( nrow(uploaded$samples.csv) > MAXSAMPLES ) {
                             status["samples.csv"] = paste("ERROR: max",MAXSAMPLES,"samples allowed")
                         }
                     }
                     
                     ## check samples.csv: must have group column defined
                     if(status["samples.csv"]=="OK" && status["contrasts.csv"]=="OK") {
-                        samples1   = uploaded[["samples.csv"]]
-                        contrasts1 = uploaded[["contrasts.csv"]]
+                        samples1   = uploaded$samples.csv
+                        contrasts1 = uploaded$contrasts.csv
                         if(!all(rownames(contrasts1) %in% rownames(samples1))) {
                             status["contrasts.csv"] = "ERROR: contrasts do not match samples"
                         }
@@ -1109,15 +819,15 @@ UploadModuleServer <- function(id,
                     message("[checkTables] ERROR in counts table : e2 = ",e3)
 
                     if(e1 && !s1) {
-                        uploaded[["samples.csv"]] <- NULL
+                        uploaded$samples.csv <- NULL
                         status["samples.csv"] = "please upload"
                     }
                     if(e2 && !s2) {
-                        uploaded[["contrasts.csv"]] <- NULL
+                        uploaded$contrasts.csv <- NULL
                         status["contrasts.csv"] = "please upload"
                     }
                     if(e3 && !s3) {
-                        uploaded[["counts.csv"]] <- NULL
+                        uploaded$counts.csv <- NULL
                         status["counts.csv"] = "please upload"
                     }
                 }
@@ -1127,7 +837,7 @@ UploadModuleServer <- function(id,
                     (is.null(uploaded$counts.csv) ||
                      is.null(uploaded$samples.csv)) )
                 {
-                    uploaded[["contrasts.csv"]] <- NULL
+                    uploaded$contrasts.csv <- NULL
                     status["contrasts.csv"] = "please upload"
                 }
                 
@@ -1170,12 +880,88 @@ UploadModuleServer <- function(id,
                     DT::formatStyle(0, target='row', fontSize='12px', lineHeight='100%')                
             })               
 
-            ##========================================================================
-            ## return results as reactive object
-            ##========================================================================            
-            ## return(shiny::reactive(uploaded$pgx))  ## pointing to reactive results object
-            ##return(computed_pgx)
-            return(uploaded_pgx)
+
+          output$countstable <- DT::renderDataTable({
+            df <- uploaded$counts.csv
+            if(!is.null(df) && nrow(df)) {
+              df <- round(df, digits=2)
+              df <- data.frame("(rownames)"=rownames(df),df,check.names=FALSE)
+            } else {
+              mx1 <- matrix(HTML(" "), 10, 10)
+              genes <- paste0("gene_",1:nrow(mx1))
+              colnames(mx1) <- paste0("sample_",1:10)
+              df <- data.frame("(rownames)"=genes, mx1, check.names=FALSE)
+            }
+            dt <- DT::datatable(
+              df,
+              rownames = FALSE,
+              selection = 'none',
+              class="compact cell-border",
+              options = list(
+                dom = 't'
+              )                                
+            ) %>%
+              DT::formatStyle(0, target='row', fontSize='12px', lineHeight='80%')                
+          })
+
+          output$sampletable <- DT::renderDataTable({
+            df <- uploaded$samples.csv
+            if(!is.null(df) && nrow(df)) {
+              df <- data.frame("(rownames)"=rownames(df),df,check.names=FALSE)
+            } else {
+              mx1 <- matrix(HTML(" "), 10, 8)
+              colnames(mx1) <- paste0("phenotype_",1:8)
+              samples <- paste0("sample_",1:nrow(mx1))
+              df <- data.frame("(rownames)"=samples, mx1, check.names=FALSE)
+            }
+
+            dt <- DT::datatable(
+              df,
+              rownames = FALSE,
+              selection = 'none',
+              class="compact cell-border",
+              options = list(
+                dom = 't'
+              )                                
+            ) %>%
+              DT::formatStyle(0, target='row', fontSize='12px', lineHeight='80%')                
+          })
+
+          output$contrasttable <- DT::renderDataTable({
+            df <- uploaded$contrasts.csv
+            if(!is.null(df) && nrow(df)) {
+              df <- data.frame("(rownames)"=rownames(df),df,check.names=FALSE)            
+            } else {
+              mx1 <- matrix(HTML(" "), 10, 8)
+              colnames(mx1) <- paste0(LETTERS[1:8],"_vs_ctrl")              
+              samples <- paste0("sample_",1:nrow(mx1))              
+              df <- data.frame("(rownames)"=samples, mx1, check.names=FALSE)
+            }
+            dt <- DT::datatable(
+              df,
+              rownames = FALSE,
+              selection = 'none',
+              class="compact cell-border",
+              options = list(
+                dom = 't'
+              )                                
+            ) %>%
+              DT::formatStyle(0, target='row', fontSize='12px', lineHeight='80%')                
+          })
+
+          
+          ##========================================================================
+          ## return results as reactive object
+          ##========================================================================            
+          ## return(shiny::reactive(uploaded$pgx))  ## pointing to reactive results object
+                    
+          return(list(
+            counts.csv    = reactive(uploaded$counts.csv),
+            samples.csv   = reactive(uploaded$samples.csv),
+            contrasts.csv = reactive(uploaded$contrasts.csv),
+##          pgx           = reactive(uploaded$pgx),
+            meta          = reactive(uploaded$meta)
+          ))
             
         })  ## end moduleServer
 

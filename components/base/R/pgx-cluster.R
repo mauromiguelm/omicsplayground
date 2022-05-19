@@ -588,7 +588,10 @@ pgx.clusterMatrix <- function(X, perplexity=30, dims=c(2,3),
 
     if(!is.null(pos2)) pos <- pos2
     if(!is.null(pos3)) pos <- pos3
-    idx <- pgx.findLouvainClusters(pos, level=1, prefix='c', small.zero=0.01)
+    idx <- NULL
+    if(find.clusters) {
+      idx <- pgx.findLouvainClusters(pos, level=1, prefix='c', small.zero=0.01)
+    }
     
     res <- list(pos2d=pos2, pos3d=pos3, idx=idx)
     return(res)

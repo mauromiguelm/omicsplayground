@@ -1,0 +1,28 @@
+html {
+
+    .wizpanel {
+	margin-top: 20px;
+    }
+    
+    .wizpanel>.tabbable>.nav-tabs,
+    .wizpanel>.tabbable>.nav-tabs>li>a,
+    .wizpanel>.tabbable>.nav-tabs>li.active>a {
+	border: 0px;
+    }
+
+    .wizpanel>.tabbable>.nav>li>a:hover {
+	background-color: white;
+    }
+
+    .wizpanel .active .wiz-tabs {
+	color: white !important;
+	font-weight: 900;
+	background-color: crimson !important;
+    }
+
+    .wizpanel  .wiz-tabs {
+	color: #aaa !important;
+	min-width: 200px;
+    }
+
+}

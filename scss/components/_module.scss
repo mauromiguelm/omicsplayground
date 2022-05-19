@@ -1,11 +1,16 @@
 html {
+
   .plotmodule {
     padding: 10px 20px 10px 20px; 
   }
 
-  .plotmodule-header {
+  .module-header {
     margin: 0px 5px 5px 0px; 
     border-bottom: 1px solid #ccc;
+  }
+
+  .module-title {
+      font-weight: 400;
   }
   
 }
