@@ -19,6 +19,7 @@
 *.save
 *.out
 *.log
+*.pgx_
 
 # Log files
 ######################
