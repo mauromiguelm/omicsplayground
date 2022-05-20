@@ -114,7 +114,7 @@ WgcnaBoard <- function(id, inputData)
 
         ## Expand multi-class discrete phenotypes into binary vectors
         ##datTraits1 <- datTraits
-        tr.class <- sapply(type.convert(datTraits),class) 
+        tr.class <- sapply(type.convert(datTraits,as.is=FALSE),class) 
         sel1 <- which(tr.class %in% c("factor"))
         sel2 <- which(tr.class %in% c("integer","numeric"))
         tr1 <- datTraits[,0]

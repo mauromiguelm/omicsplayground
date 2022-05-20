@@ -241,7 +241,7 @@ pgx.initialize <- function(pgx) {
     ## into numeric, categorical into factors....
     ##----------------------------------------------------------------
     ##pgx$samples <- tidy.dataframe(pgx$samples)  ## warning!! this converts all to CHR!!
-    pgx$samples <- type.convert(pgx$samples)    ## autoconvert to datatypes
+    pgx$samples <- type.convert(pgx$samples,as.is=FALSE)    ## autoconvert to datatypes
     pgx$samples <- pgx$samples[,which(colMeans(is.na(pgx$samples))<1),drop=FALSE]
 
     is.num  <- sapply(pgx$samples,class) %in% c('numeric','integer')
@@ -258,7 +258,7 @@ pgx.initialize <- function(pgx) {
     kk = grep("lib.size|norm.factor|donor|clone|barcode",
               colnames(pgx$samples),invert=TRUE,value=TRUE)
     pgx$Y = pgx$samples[colnames(pgx$X),kk,drop=FALSE]
-    pgx$Y <- type.convert(pgx$Y)   ## autoconvert to datatypes
+    pgx$Y <- type.convert(pgx$Y,as.is=FALSE)   ## autoconvert to datatypes
     
     ## *****************************************************************
     ## ******************NEED RETHINK***********************************

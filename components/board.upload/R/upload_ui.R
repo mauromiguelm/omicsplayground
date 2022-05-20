@@ -7,7 +7,8 @@ UploadBoardInputs <- function(id) {
   ns <- shiny::NS(id)  ## namespace
   bigdash::tabSettings(
     ## shiny::actionLink(ns("module_info"), "Tutorial", icon = shiny::icon("youtube"))
-    shinyWidgets::prettySwitch(ns("advanced_mode"),"batch correction (beta)")
+      shinyWidgets::prettySwitch(ns("advanced_mode"),"batch correction (beta)"),
+      shinyWidgets::prettySwitch(ns("upload-show_tables"),"show tables")
   )
 }
 

@@ -172,8 +172,8 @@ MakeContrastServerRT <- function(id, phenoRT, contrRT, countsRT, height=720)
           }
         }
         
-        df <- type.convert(df)
-        ii <- which(sapply(type.convert(df),class) %in% c("numeric","integer"))
+        df <- type.convert(df,as.is=FALSE)
+        ii <- which(sapply(df,class) %in% c("numeric","integer"))
         ii
         if(length(ii)) {
           for(i in ii) {

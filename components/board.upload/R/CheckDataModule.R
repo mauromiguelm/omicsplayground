@@ -370,7 +370,7 @@ CheckDataModule <- function(id,
         pheno <- files$samples.csv             
         px <- head(colnames(pheno),20)  ## show maximum??
 
-        df <- type.convert(pheno[,px,drop=FALSE])
+        df <- type.convert(pheno[,px,drop=FALSE],as.is=FALSE)
         vt <- df %>% inspectdf::inspect_types()
         vt
         

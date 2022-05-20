@@ -9,15 +9,17 @@
 ##=============================================================================
 
 if(0) {
-  load("~/Playground/omicsplayground/data/GSE10846-dlbcl-nc.pgx")    
 
-  BatchCorrectGadget(X=ngs$X, pheno=ngs$samples)
-
-  out <- gadgetize2(
-    BatchCorrectUI, BatchCorrectServer,
-    title = "UploadGadget", height=640, size="l", 
-    X = ngs$X, pheno=ngs$samples )
-  names(out)
+    load("~/Playground/pgx/GSE10846-dlbcl-nc.pgx")
+    source("~/Playground/omicsplayground/components/00SourceAll.R",chdir=TRUE)        
+    
+    BatchCorrectGadget(X=ngs$X, pheno=ngs$samples)
+    
+    out <- gadgetize2(
+        BatchCorrectUI, BatchCorrectServer,
+        title = "UploadGadget", height=640, size="l", 
+        X = ngs$X, pheno=ngs$samples )
+    names(out)
   
 }
 
@@ -57,27 +59,6 @@ BatchCorrectServer <- function(id, X, pheno, is.count=FALSE, height=720) {
     id,
     function(input, output, session) {
       
-
-      if(0) {
-        shiny::observeEvent( input$bc_strength, {
-          if(input$bc_strength=="low") {
-            shiny::updateSelectInput(session,"bc_batchpar",selected="*")
-            shiny::updateCheckboxGroupInput(session, "bc_methods", selected="")
-          }
-          if(input$bc_strength=="medium") {
-            sel <- c("*","<cell_cycle>","<gender>","<libsize>","<mito/ribo>")
-            shiny::updateSelectInput(session,"bc_batchpar",selected=sel)
-            shiny::updateCheckboxGroupInput(session,"bc_methods", selected=c("PCA","HC"))
-          }
-          if(input$bc_strength=="strong") {
-            sel <- c("*","<cell_cycle>","<gender>","<libsize>","<mito/ribo>")
-            shiny::updateSelectInput(session,"bc_batchpar",selected=sel)
-            shiny::updateCheckboxGroupInput(session, "bc_methods", selected="SVA")
-          }
-        })
-      }
-
-
       max.rho=0.5
       getNotCorrelatedBatchPars <- function(pheno, model.par, max.rho=0.5) {
         
@@ -144,8 +125,7 @@ BatchCorrectServer <- function(id, X, pheno, is.count=FALSE, height=720) {
 
         dbg("[BatchCorrect::canvas] reacted!")
         
-        out <- outobj()
-        
+        out <- outobj()        
         dbg("[BatchCorrect::canvas] 0: dim.outX = ", dim(out$X))
         dbg("[BatchCorrect::canvas] 0: names.X = ", names(out))        
 
@@ -154,13 +134,10 @@ BatchCorrectServer <- function(id, X, pheno, is.count=FALSE, height=720) {
           return(NULL)
         }
 
-        dbg("[BatchCorrect::canvas] 0: dim.X = ", dim(X()))
-        
+        dbg("[BatchCorrect::canvas] 0: dim.X = ", dim(X()))        
         shiny::req(X())
-
         dbg("[BatchCorrect::canvas] 1: ")
-        
-        
+
         ## is.valid <- all(dim(out$X)==dim(X()) &&
         ##                 nrow(out$Y)==ncol(X()))
         ## if(!is.valid) {

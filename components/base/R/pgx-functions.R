@@ -476,7 +476,6 @@ read.csv3 <- function(file, as_matrix=FALSE)
     if(length(sel)) {
         rownames(x) <- xnames[sel]
     }
-    ##x <- type.convert(x)
     x
 }
 
@@ -761,8 +760,6 @@ pgx.getCategoricalPhenotypes <-function(df, min.ncat=2, max.ncat=20, remove.dup=
     ##
     ##
     ##
-    ##df <- type.convert(df)
-    
     is.bad = 0
 
     ## ... exclude sample IDs
@@ -1500,7 +1497,7 @@ expandPhenoMatrix <- function(pheno, collapse=TRUE, drop.ref=TRUE) {
     nlevel <- apply(a1,2,function(x) length(setdiff(unique(x),NA)))
     nterms <- colSums(!is.na(a1))
     ##y.class <- sapply(a1,class)
-    y.class <- sapply(type.convert(pheno),class)
+    y.class <- sapply(type.convert(pheno,as.is=FALSE),class)
     ##y.isnum <- apply(a1,2,is.num)
     y.isnum <- (y.class %in% c("numeric","integer"))
     nlevel

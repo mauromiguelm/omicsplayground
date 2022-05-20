@@ -42,28 +42,32 @@ UploadModuleUI <- function(id) {
       )
     ),      
     shiny::fluidRow(
-      tabsetPanel(
-        tabPanel(
-          "Counts",
-          div(DT::dataTableOutput(ns("countstable"), width="100%"),
-            style = "height:250px; overflow-y:scroll; overflow-x:scroll;")
-        ),
-        tabPanel(
-          "Samples",
-          div(
-            DT::dataTableOutput(ns("sampletable"), width="100%"),
-            style = "height:250px; overflow-y:scroll; overflow-x:scroll;"
-          )
-        ),
-        tabPanel(
-          "Contrasts",
-          div(
-            DT::dataTableOutput(ns("contrasttable"), width="100%"),
-            style = "height:250px; overflow-y:scroll; overflow-x:scroll;"        
-          )
-        )
-      )  ## end of tabsetPanel
+        shiny::conditionalPanel(
+            "input.show_tables == true", ns=ns,
+            tabsetPanel(
+                tabPanel(
+                    "Counts",
+                    div(DT::dataTableOutput(ns("countstable"), width="100%"),
+                        style = "height:250px; overflow-y:scroll; overflow-x:scroll;")
+                ),
+                tabPanel(
+                    "Samples",
+                    div(
+                        DT::dataTableOutput(ns("sampletable"), width="100%"),
+                        style = "height:250px; overflow-y:scroll; overflow-x:scroll;"
+                    )
+                ),
+                tabPanel(
+                    "Contrasts",
+                    div(
+                        DT::dataTableOutput(ns("contrasttable"), width="100%"),
+                        style = "height:250px; overflow-y:scroll; overflow-x:scroll;"        
+                    )
+                )
+            )  ## end of tabsetPanel
+        ) ## end of conditionalPanel
     )  ## end of fluidRow
+
   )  ## end of fluidPage
     
 }
@@ -76,7 +80,8 @@ UploadModuleServer <- function(id,
                                    comparisons = 20,
                                    genes = 20000,
                                    genesets = 10000,
-                                   datasets = 10 )
+                                   datasets = 10 ),
+                               show_tables = reactive(TRUE)
                                )
 {
     shiny::moduleServer(
@@ -461,7 +466,7 @@ UploadModuleServer <- function(id,
                         if(names(matlist)[i] %in% c("counts.csv","contrasts.csv")) {
                             matlist[[i]] <- as.matrix(matlist[[i]])
                         } else {
-                            matlist[[i]] <- type.convert(matlist[[i]])
+                            matlist[[i]] <- type.convert(matlist[[i]],as.is=FALSE)
                         }
                         m1 <- names(matlist)[i]
                         message("[upload_files] updating matrix ",m1)                        

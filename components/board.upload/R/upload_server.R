@@ -61,17 +61,23 @@ UploadBoard <- function(id,
     ##================================================================================
     ##=================================== UI =========================================
     ##================================================================================
-
-    output$makecontrast_UI <- renderUI({
-      MakeContrastUI(ns("makecontrast"))
+    
+    observeEvent( input$advanced_mode, {
+        message("[upload_server] advanced_mode = ",input$advanced_mode)
+        if(input$advanced_mode) {
+            showTab("wiz", "page2")
+        } else {
+            hideTab("wiz", "page2")
+        }
+        
     })
-    shiny::outputOptions(output, "makecontrast_UI", suspendWhenHidden=FALSE) ## important!!!    
+
     
     ##================================================================================
     ##============================== modules =========================================
     ##================================================================================
 
-    WizardDialogServer("wiz", 3)
+    WizardDialogServer("wiz", 4)
     
     ## Some 'global' reactive variables used in this file
     files <- shiny::reactiveValues(
@@ -86,7 +92,8 @@ UploadBoard <- function(id,
       id = "upload",
       FILES = FILES,        ## for example.zip
       height = height,
-      limits = limits
+      limits = limits,
+      show_tables = reactive(input$show_tables)
     )
 
     observeEvent( uploaded$counts.csv(), {
