@@ -35,16 +35,7 @@ jobs:
           docker run --name run_tests masierom/omicsplayground:latest
           docker cp run_tests:omicsplayground/tests .
           
-      # - 
-      #   name: Setup upterm session
-      #   uses: lhotari/action-upterm@v1
-      #   with:
-      #     ## limits ssh access and adds the ssh public key for the user which triggered the workflow
-      #     limit-access-to-actor: true
-      #     ## limits ssh access and adds the ssh public keys of the listed GitHub users
-      #     limit-access-to-users: mauromiguelm
-      #     wait-timeout-minutes: 120
-
+      
       - 
         name: Upload snapshots as artifact
         uses: actions/upload-artifact@v3
@@ -70,7 +61,16 @@ jobs:
             git push origin;
             echo "snapshots pushed to repo";
           fi
-      
+      - 
+        name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+        with:
+          ## limits ssh access and adds the ssh public key for the user which triggered the workflow
+          limit-access-to-actor: true
+          ## limits ssh access and adds the ssh public keys of the listed GitHub users
+          limit-access-to-users: mauromiguelm
+          wait-timeout-minutes: 120
+
       -
         name: Print test result
         run: echo "Test result = ${{ steps.test.outputs.test_result }}"
